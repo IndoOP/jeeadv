@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JEE Advanced Mock Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --chart-grid: #e2e8f0;
+        }
+
+        .dark {
+            --chart-grid: #334155;
+            color-scheme: dark;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .dark .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0);
+        }
+        .dark input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        darkCard: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 dark:bg-darkBg text-slate-900 dark:text-slate-100 min-h-screen pb-12">
+
+    <!-- Header -->
+    <header class="bg-indigo-700 dark:bg-indigo-900 text-white p-6 sticky top-0 z-40 shadow-lg">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/20 p-2 rounded-lg">
+                    <i class="fas fa-chart-line text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-800 tracking-tight">JEE ADVANCED TRACKER</h1>
+                    <p class="text-xs text-indigo-200 font-medium uppercase tracking-widest">Performance Analytics</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95" title="Toggle Dark Mode">
+                    <i id="theme-icon" class="fas fa-moon text-lg"></i>
+                </button>
+                <button onclick="openModal()" class="hidden md:flex items-center gap-2 bg-white text-indigo-700 px-5 py-2.5 rounded-xl font-bold hover:bg-indigo-50 transition-all shadow-md active:scale-95">
+                    <i class="fas fa-plus"></i> Add Test
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="bg-white/80 dark:bg-darkCard/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-[88px] z-30">
+        <div class="max-w-6xl mx-auto flex overflow-x-auto custom-scrollbar">
+            <button onclick="setTab('dashboard')" id="tab-dashboard" class="nav-tab px-6 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Dashboard</button>
+            <button onclick="setTab('analytics')" id="tab-analytics" class="nav-tab px-6 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Subject Analysis</button>
+            <button onclick="setTab('predictor')" id="tab-predictor" class="nav-tab px-6 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Rank Predictor</button>
+            <button onclick="setTab('history')" id="tab-history" class="nav-tab px-6 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Test History</button>
+            <button onclick="setTab('settings')" id="tab-settings" class="nav-tab px-6 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Settings</button>
+        </div>
+    </nav>
+
+    <main id="app-content" class="max-w-6xl mx-auto p-4 md:p-8">
+        <!-- Content injected via JS -->
+    </main>
+
+    <!-- Modal for adding scores -->
+    <div id="scoreModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-darkCard rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl scale-95 transition-transform duration-300" id="modalContainer">
+            <div class="p-6 border-b dark:border-slate-800 flex justify-between items-center sticky top-0 bg-white dark:bg-darkCard z-10">
+                <h2 class="text-xl font-bold">Add Mock Result</h2>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="scoreForm" class="p-6 space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-slate-500 mb-1 uppercase tracking-tighter">Test Name</label>
+                        <input type="text" id="testName" required placeholder="e.g. Allen AITS Part Test" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-500 mb-1 uppercase tracking-tighter">Date</label>
+                        <input type="date" id="testDate" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-500 mb-1 uppercase tracking-tighter">Max Marks (P1 + P2)</label>
+                        <input type="number" id="maxMarks" required placeholder="360" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white transition">
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="p-5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/30">
+                        <h3 class="font-bold text-indigo-700 dark:text-indigo-400 mb-4 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">1</span>
+                            Paper 1 Scores
+                        </h3>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Physics</label>
+                                <input type="number" id="p1p" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Chemistry</label>
+                                <input type="number" id="p1c" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Maths</label>
+                                <input type="number" id="p1m" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30">
+                        <h3 class="font-bold text-emerald-700 dark:text-emerald-400 mb-4 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center">2</span>
+                            Paper 2 Scores
+                        </h3>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Physics</label>
+                                <input type="number" id="p2p" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Chemistry</label>
+                                <input type="number" id="p2c" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Maths</label>
+                                <input type="number" id="p2m" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 pt-4 sticky bottom-0 bg-white dark:bg-darkCard py-4 border-t dark:border-slate-800">
+                    <button type="button" onclick="closeModal()" class="flex-1 py-3 px-6 rounded-xl border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition">Cancel</button>
+                    <button type="submit" class="flex-[2] py-3 px-6 rounded-xl bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-200 dark:shadow-none hover:bg-indigo-700 transition">Save Test Result</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for test details -->
+    <div id="detailsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-darkCard rounded-3xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl scale-95 transition-transform duration-300" id="detailsContainer">
+            <div id="details-content">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Add Button -->
+    <button onclick="openModal()" class="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-95 transition-all">
+        <i class="fas fa-plus text-xl"></i>
+    </button>
+
+    <script>
+        let scores = JSON.parse(localStorage.getItem('jee_adv_v2_scores')) || [];
+        let rankMap = JSON.parse(localStorage.getItem('jee_adv_v2_rankmap')) || [
+            { marks: 300, rank: 100 },
+            { marks: 250, rank: 500 },
+            { marks: 210, rank: 2000 },
+            { marks: 180, rank: 5000 },
+            { marks: 150, rank: 10000 },
+            { marks: 120, rank: 20000 },
+            { marks: 90, rank: 40000 }
+        ];
+        let currentTab = 'dashboard';
+        let chartInstance = null;
+
+        window.onload = () => {
+            renderTab();
+            updateTabUI();
+            if (localStorage.getItem('darkMode') === 'enabled') {
+                document.documentElement.classList.add('dark');
+                document.getElementById('theme-icon').classList.replace('fa-moon', 'fa-sun');
+            }
+        };
+
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.setItem('darkMode', 'disabled');
+                icon.classList.replace('fa-sun', 'fa-moon');
+            } else {
+                html.classList.add('dark');
+                localStorage.setItem('darkMode', 'enabled');
+                icon.classList.replace('fa-moon', 'fa-sun');
+            }
+            renderTab(); 
+        }
+
+        function setTab(tab) {
+            currentTab = tab;
+            renderTab();
+            updateTabUI();
+        }
+
+        function updateTabUI() {
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.classList.remove('border-indigo-600', 'text-indigo-600', 'dark:text-indigo-400', 'dark:border-indigo-400');
+                if (btn.id === `tab-${currentTab}`) {
+                    btn.classList.add('border-indigo-600', 'text-indigo-600', 'dark:text-indigo-400', 'dark:border-indigo-400');
+                }
+            });
+        }
+
+        function renderTab() {
+            const container = document.getElementById('app-content');
+            if (chartInstance) chartInstance.destroy();
+
+            switch (currentTab) {
+                case 'dashboard': renderDashboard(container); break;
+                case 'analytics': renderAnalytics(container); break;
+                case 'predictor': renderPredictor(container); break;
+                case 'history': renderHistory(container); break;
+                case 'settings': renderSettings(container); break;
+            }
+        }
+
+        function calculateStats() {
+            if (scores.length === 0) return { avg: 0, best: 0, count: 0, latest: 0 };
+            const totalMarks = scores.reduce((acc, s) => acc + s.grandTotal, 0);
+            return {
+                avg: parseFloat((totalMarks / scores.length).toFixed(1)),
+                best: Math.max(...scores.map(s => s.grandTotal)),
+                count: scores.length,
+                latest: scores[scores.length - 1].grandTotal
+            };
+        }
+
+        function renderDashboard(container) {
+            const stats = calculateStats();
+            container.innerHTML = `
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    ${createStatCard('Tests Taken', stats.count, 'fa-file-lines', 'text-blue-500')}
+                    ${createStatCard('Avg Score', stats.avg, 'fa-bullseye', 'text-indigo-500')}
+                    ${createStatCard('Best Marks', stats.best, 'fa-trophy', 'text-emerald-500')}
+                    ${createStatCard('Est. Rank', predictRank(stats.avg), 'fa-ranking-star', 'text-amber-500')}
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 glass-card p-6 rounded-3xl">
+                        <h3 class="font-bold text-lg mb-6 flex items-center gap-2">
+                            <i class="fas fa-chart-area text-indigo-500"></i> Performance Trend
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="mainChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card p-6 rounded-3xl flex flex-col h-[380px] lg:h-auto overflow-hidden">
+                        <h3 class="font-bold text-lg mb-6 flex items-center gap-2">
+                            <i class="fas fa-clock-rotate-left text-indigo-500"></i> Recent Activity
+                        </h3>
+                        <div class="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-2">
+                            ${scores.length === 0 ? '<p class="text-slate-400 text-center py-10">No data available</p>' : 
+                                scores.slice(-10).reverse().map(s => `
+                                    <div onclick="showTestDetails(${s.id})" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                                        <div class="w-10 h-10 shrink-0 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 font-bold text-xs">
+                                            ${Math.round((s.grandTotal/s.maxMarks)*100)}%
+                                        </div>
+                                        <div class="flex-1 overflow-hidden">
+                                            <p class="font-bold text-sm truncate">${s.name}</p>
+                                            <p class="text-[10px] text-slate-400 font-medium">${s.date}</p>
+                                        </div>
+                                        <div class="text-right shrink-0">
+                                            <p class="font-black text-sm">${s.grandTotal}</p>
+                                        </div>
+                                    </div>
+                                `).join('')
+                            }
+                        </div>
+                    </div>
+                </div>
+            `;
+            if (scores.length > 0) setTimeout(initMainChart, 50);
+        }
+
+        function createStatCard(title, val, icon, colorClass) {
+            return `
+                <div class="glass-card p-5 rounded-3xl">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-tighter">${title}</span>
+                        <i class="fas ${icon} ${colorClass} opacity-80"></i>
+                    </div>
+                    <h3 class="text-2xl md:text-3xl font-black">${val}</h3>
+                </div>
+            `;
+        }
+
+        function renderAnalytics(container) {
+            if (scores.length === 0) {
+                container.innerHTML = `<div class="text-center py-20 bg-white dark:bg-darkCard rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+                    <i class="fas fa-chart-pie text-5xl text-slate-200 mb-4"></i>
+                    <p class="text-slate-500 font-medium">Add at least one test to unlock subject analytics.</p>
+                </div>`;
+                return;
+            }
+            const pTotal = scores.reduce((a, b) => a + b.subj.p, 0) / scores.length;
+            const cTotal = scores.reduce((a, b) => a + b.subj.c, 0) / scores.length;
+            const mTotal = scores.reduce((a, b) => a + b.subj.m, 0) / scores.length;
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass-card p-6 rounded-3xl">
+                        <h3 class="font-bold text-lg mb-6">Average Subject Balance</h3>
+                        <div class="chart-container">
+                            <canvas id="subjectPie"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card p-6 rounded-3xl">
+                        <h3 class="font-bold text-lg mb-6">Subject Consistency</h3>
+                        <div class="chart-container">
+                            <canvas id="subjectStack"></canvas>
+                        </div>
+                    </div>
+                </div>
+            `;
+            setTimeout(() => initSubjectCharts(pTotal, cTotal, mTotal), 50);
+        }
+
+        function renderPredictor(container) {
+            const stats = calculateStats();
+            const predictedRank = predictRank(stats.avg);
+            container.innerHTML = `
+                <div class="max-w-3xl mx-auto space-y-6">
+                    <div class="bg-gradient-to-br from-indigo-600 to-violet-700 text-white p-10 rounded-[2.5rem] shadow-xl relative overflow-hidden">
+                        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+                        <div class="relative z-10 text-center">
+                            <i class="fas fa-wand-magic-sparkles text-4xl mb-4 opacity-80"></i>
+                            <h2 class="text-4xl font-black mb-2">Rank Prediction</h2>
+                            <p class="text-indigo-100 font-medium mb-8">Estimated based on your average of ${stats.count} tests</p>
+                            <div class="grid grid-cols-2 gap-6">
+                                <div class="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/10">
+                                    <p class="text-[10px] uppercase font-black tracking-widest opacity-60 mb-1">Expected Total</p>
+                                    <p class="text-4xl font-black">${stats.avg}</p>
+                                </div>
+                                <div class="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/10">
+                                    <p class="text-[10px] uppercase font-black tracking-widest opacity-60 mb-1">Expected AIR</p>
+                                    <p class="text-4xl font-black">${predictedRank}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-card p-8 rounded-[2.5rem]">
+                        <h3 class="font-bold text-lg mb-6 flex items-center gap-2">
+                            <i class="fas fa-circle-exclamation text-amber-500"></i> Subject Breakdown
+                        </h3>
+                        <div class="space-y-6">
+                            ${createProgress('Physics', (scores.reduce((a,b)=>a+b.subj.p,0)/scores.length).toFixed(1), 'bg-blue-500')}
+                            ${createProgress('Chemistry', (scores.reduce((a,b)=>a+b.subj.c,0)/scores.length).toFixed(1), 'bg-emerald-500')}
+                            ${createProgress('Mathematics', (scores.reduce((a,b)=>a+b.subj.m,0)/scores.length).toFixed(1), 'bg-amber-500')}
+                        </div>
+                        <p class="mt-8 text-xs text-slate-400 text-center italic">Calculations use linear interpolation between your calibration points in Settings.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createProgress(label, val, color) {
+            const perc = Math.min(100, (val / 120) * 100);
+            return `
+                <div>
+                    <div class="flex justify-between text-sm font-bold mb-2">
+                        <span>${label}</span>
+                        <span class="text-slate-400">${val} <small class="text-[10px]">/ 120 avg</small></span>
+                    </div>
+                    <div class="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                        <div class="h-full ${color} rounded-full transition-all duration-1000" style="width: ${perc}%"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderHistory(container) {
+            container.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-black">Test Vault</h2>
+                    <div class="flex gap-2">
+                        <button onclick="exportCSV()" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition"><i class="fas fa-file-csv"></i></button>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    ${scores.length === 0 ? `
+                        <div class="text-center py-20 glass-card rounded-3xl border-2 border-dashed">
+                            <p class="text-slate-400">Empty vault. Add some mocks to get started.</p>
+                        </div>
+                    ` : scores.slice().reverse().map(s => `
+                        <div onclick="showTestDetails(${s.id})" class="glass-card p-5 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-indigo-500 transition group cursor-pointer relative overflow-hidden">
+                            <div class="flex items-center gap-4 relative z-10">
+                                <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-black text-slate-800 dark:text-slate-100">${s.name}</h4>
+                                    <p class="text-xs text-slate-400 font-semibold">${s.date} • Max Marks: ${s.maxMarks}</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto relative z-10">
+                                <div class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold">P1: ${s.p1Total}</div>
+                                <div class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold">P2: ${s.p2Total}</div>
+                                <div class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black">Score: ${s.grandTotal}</div>
+                                <button onclick="event.stopPropagation(); deleteScore(${s.id})" class="p-2 text-slate-400 hover:text-red-500 transition md:opacity-0 group-hover:opacity-100">
+                                    <i class="fas fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function showTestDetails(id) {
+            const test = scores.find(s => s.id === id);
+            if (!test) return;
+
+            const modal = document.getElementById('detailsModal');
+            const content = document.getElementById('details-content');
+            const perc = ((test.grandTotal / test.maxMarks) * 100).toFixed(1);
+
+            content.innerHTML = `
+                <div class="p-8 space-y-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 class="text-2xl font-black text-indigo-600 dark:text-indigo-400">${test.name}</h2>
+                            <p class="text-slate-400 font-bold uppercase text-[10px] tracking-widest">${test.date}</p>
+                        </div>
+                        <button onclick="closeDetails()" class="text-slate-300 hover:text-slate-500"><i class="fas fa-times text-xl"></i></button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl text-center">
+                            <p class="text-[10px] font-black text-slate-400 uppercase">Grand Total</p>
+                            <p class="text-3xl font-black">${test.grandTotal} <small class="text-sm text-slate-400">/ ${test.maxMarks}</small></p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl text-center">
+                            <p class="text-[10px] font-black text-slate-400 uppercase">Percentage</p>
+                            <p class="text-3xl font-black text-emerald-500">${perc}%</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-4">
+                            <div class="flex-1">
+                                <h4 class="font-bold mb-2">Subject Breakdown</h4>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-xs font-bold">
+                                        <span class="text-blue-500">Physics</span>
+                                        <span>${test.subj.p}</span>
+                                    </div>
+                                    <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                        <div class="h-full bg-blue-500" style="width: ${(test.subj.p / (test.maxMarks/3) * 100)}%"></div>
+                                    </div>
+                                    <div class="flex justify-between text-xs font-bold">
+                                        <span class="text-emerald-500">Chemistry</span>
+                                        <span>${test.subj.c}</span>
+                                    </div>
+                                    <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                        <div class="h-full bg-emerald-500" style="width: ${(test.subj.c / (test.maxMarks/3) * 100)}%"></div>
+                                    </div>
+                                    <div class="flex justify-between text-xs font-bold">
+                                        <span class="text-amber-500">Mathematics</span>
+                                        <span>${test.subj.m}</span>
+                                    </div>
+                                    <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                        <div class="h-full bg-amber-500" style="width: ${(test.subj.m / (test.maxMarks/3) * 100)}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t dark:border-slate-800 pt-4 grid grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="text-xs font-black uppercase text-slate-400 mb-2">Paper 1</h4>
+                                <p class="text-xl font-black">${test.p1Total}</p>
+                                <p class="text-[10px] text-slate-400">Contribution: ${((test.p1Total/test.grandTotal)*100).toFixed(0)}%</p>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-black uppercase text-slate-400 mb-2">Paper 2</h4>
+                                <p class="text-xl font-black">${test.p2Total}</p>
+                                <p class="text-[10px] text-slate-400">Contribution: ${((test.p2Total/test.grandTotal)*100).toFixed(0)}%</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="closeDetails()" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold">Close Details</button>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            setTimeout(() => document.getElementById('detailsContainer').classList.remove('scale-95'), 10);
+        }
+
+        function closeDetails() {
+            document.getElementById('detailsContainer').classList.add('scale-95');
+            setTimeout(() => document.getElementById('detailsModal').classList.add('hidden'), 200);
+        }
+
+        function renderSettings(container) {
+            container.innerHTML = `
+                <div class="max-w-2xl mx-auto space-y-8">
+                    <div class="glass-card p-8 rounded-[2rem]">
+                        <h3 class="font-bold text-xl mb-6">Rank-Marks Calibration</h3>
+                        <p class="text-sm text-slate-500 mb-8">Update these thresholds to match the expected difficulty of the current year JEE Advanced.</p>
+                        <div id="rankmap-list" class="space-y-3">
+                            <div class="flex gap-3 px-3 text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                                <div class="flex-1">Marks</div>
+                                <div class="flex-1">Expected Rank</div>
+                                <div class="w-10"></div>
+                            </div>
+                            ${rankMap.map((rm, idx) => `
+                                <div class="flex gap-3 items-center">
+                                    <div class="flex-1">
+                                        <input type="number" value="${rm.marks}" onchange="updateRankMap(${idx}, 'marks', this.value)" class="w-full p-3 rounded-xl border dark:bg-slate-900 dark:border-slate-800 outline-none focus:ring-2 focus:ring-indigo-500">
+                                    </div>
+                                    <div class="flex-1">
+                                        <input type="number" value="${rm.rank}" onchange="updateRankMap(${idx}, 'rank', this.value)" class="w-full p-3 rounded-xl border dark:bg-slate-900 dark:border-slate-800 outline-none focus:ring-2 focus:ring-indigo-500">
+                                    </div>
+                                    <button onclick="deleteRankMapRow(${idx})" class="w-10 text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition"><i class="fas fa-minus-circle"></i></button>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <button onclick="addRankMapRow()" class="w-full mt-4 py-3 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-indigo-500 hover:border-indigo-500 transition flex items-center justify-center gap-2 font-bold">
+                            <i class="fas fa-plus-circle"></i> Add Calibration Point
+                        </button>
+                    </div>
+                    <div class="bg-red-50 dark:bg-red-900/10 p-6 rounded-2xl border border-red-100 dark:border-red-900/30 flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-red-600">Nuclear Option</h4>
+                            <p class="text-xs text-red-400">Wipe all stored tests and settings permanently.</p>
+                        </div>
+                        <button onclick="clearData()" class="px-6 py-2 bg-red-600 text-white rounded-xl font-bold text-sm">Reset App</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openModal() {
+            document.getElementById('scoreModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('modalContainer').classList.remove('scale-95'), 10);
+            document.getElementById('testDate').valueAsDate = new Date();
+        }
+
+        function closeModal() {
+            document.getElementById('modalContainer').classList.add('scale-95');
+            setTimeout(() => document.getElementById('scoreModal').classList.add('hidden'), 200);
+        }
+
+        document.getElementById('scoreForm').onsubmit = (e) => {
+            e.preventDefault();
+            const p1 = {
+                p: parseInt(document.getElementById('p1p').value) || 0,
+                c: parseInt(document.getElementById('p1c').value) || 0,
+                m: parseInt(document.getElementById('p1m').value) || 0
+            };
+            const p2 = {
+                p: parseInt(document.getElementById('p2p').value) || 0,
+                c: parseInt(document.getElementById('p2c').value) || 0,
+                m: parseInt(document.getElementById('p2m').value) || 0
+            };
+            const p1Total = p1.p + p1.c + p1.m;
+            const p2Total = p2.p + p2.c + p2.m;
+            const newEntry = {
+                id: Date.now(),
+                name: document.getElementById('testName').value,
+                date: document.getElementById('testDate').value,
+                maxMarks: parseInt(document.getElementById('maxMarks').value),
+                p1Total, p2Total,
+                grandTotal: p1Total + p2Total,
+                subj: { p: p1.p + p2.p, c: p1.c + p2.c, m: p1.m + p2.m }
+            };
+            scores.push(newEntry);
+            scores.sort((a, b) => new Date(a.date) - new Date(b.date));
+            localStorage.setItem('jee_adv_v2_scores', JSON.stringify(scores));
+            closeModal();
+            renderTab();
+            document.getElementById('scoreForm').reset();
+        };
+
+        function deleteScore(id) {
+            scores = scores.filter(s => s.id !== id);
+            localStorage.setItem('jee_adv_v2_scores', JSON.stringify(scores));
+            renderTab();
+        }
+
+        function predictRank(marks) {
+            if (isNaN(marks)) return "N/A";
+            const sortedMap = [...rankMap].sort((a, b) => b.marks - a.marks);
+            if (sortedMap.length === 0) return "N/A";
+            if (marks >= sortedMap[0].marks) return `~ ${sortedMap[0].rank}`;
+            if (marks <= sortedMap[sortedMap.length - 1].marks) return `> ${sortedMap[sortedMap.length - 1].rank}`;
+            for (let i = 0; i < sortedMap.length - 1; i++) {
+                const mUpper = sortedMap[i].marks;
+                const rUpper = sortedMap[i].rank;
+                const mLower = sortedMap[i+1].marks;
+                const rLower = sortedMap[i+1].rank;
+                if (marks <= mUpper && marks >= mLower) {
+                    const slope = (rLower - rUpper) / (mLower - mUpper);
+                    return Math.round(rUpper + (marks - mUpper) * slope);
+                }
+            }
+            return "N/A";
+        }
+
+        function updateRankMap(idx, key, val) {
+            rankMap[idx][key] = parseInt(val);
+            localStorage.setItem('jee_adv_v2_rankmap', JSON.stringify(rankMap));
+        }
+
+        function addRankMapRow() {
+            rankMap.push({ marks: 0, rank: 0 });
+            renderSettings(document.getElementById('app-content'));
+        }
+
+        function deleteRankMapRow(idx) {
+            rankMap = rankMap.filter((_, i) => i !== idx);
+            localStorage.setItem('jee_adv_v2_rankmap', JSON.stringify(rankMap));
+            renderSettings(document.getElementById('app-content'));
+        }
+
+        function clearData() {
+            if (confirm("Permanently delete all your scores?")) {
+                localStorage.removeItem('jee_adv_v2_scores');
+                localStorage.removeItem('jee_adv_v2_rankmap');
+                location.reload();
+            }
+        }
+
+        function exportCSV() {
+            if (scores.length === 0) return;
+            const headers = "Date,Name,P1,P2,Total,MaxMarks\n";
+            const body = scores.map(s => `${s.date},${s.name},${s.p1Total},${s.p2Total},${s.grandTotal},${s.maxMarks}`).join('\n');
+            const blob = new Blob([headers + body], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `jee_mock_results.csv`);
+            a.click();
+        }
+
+        function initMainChart() {
+            const canvas = document.getElementById('mainChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const isDark = document.documentElement.classList.contains('dark');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: scores.map(s => s.date.split('-').slice(1).join('/')),
+                    datasets: [{
+                        label: 'Score',
+                        data: scores.map(s => s.grandTotal),
+                        borderColor: '#6366f1',
+                        backgroundColor: isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.05)',
+                        fill: true,
+                        tension: 0.3,
+                        borderWidth: 4,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#6366f1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: isDark ? '#334155' : '#f1f5f9' }, ticks: { color: isDark ? '#94a3b8' : '#64748b' } },
+                        x: { grid: { display: false }, ticks: { color: isDark ? '#94a3b8' : '#64748b' } }
+                    }
+                }
+            });
+        }
+
+        function initSubjectCharts(p, c, m) {
+            const isDark = document.documentElement.classList.contains('dark');
+            const labelColor = isDark ? '#94a3b8' : '#64748b';
+            new Chart(document.getElementById('subjectPie'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Physics', 'Chemistry', 'Maths'],
+                    datasets: [{
+                        data: [p, c, m],
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: labelColor } } },
+                    cutout: '70%'
+                }
+            });
+            new Chart(document.getElementById('subjectStack'), {
+                type: 'bar',
+                data: {
+                    labels: scores.map(s => s.name.length > 10 ? s.name.slice(0, 8) + '..' : s.name),
+                    datasets: [
+                        { label: 'Physics', data: scores.map(s => s.subj.p), backgroundColor: '#3b82f6' },
+                        { label: 'Chemistry', data: scores.map(s => s.subj.c), backgroundColor: '#10b981' },
+                        { label: 'Maths', data: scores.map(s => s.subj.m), backgroundColor: '#f59e0b' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true, grid: { display: false }, ticks: { color: labelColor } },
+                        y: { stacked: true, grid: { color: isDark ? '#334155' : '#f1f5f9' }, ticks: { color: labelColor } }
+                    },
+                    plugins: { legend: { position: 'bottom', labels: { color: labelColor } } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
