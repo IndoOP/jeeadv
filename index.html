@@ -9,762 +9,951 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        
-        :root {
-            --chart-grid: #e2e8f0;
-        }
-
-        .dark {
-            --chart-grid: #334155;
-            color-scheme: dark;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .dark .glass-card {
-            background: rgba(30, 41, 59, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #475569;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 300px;
-            width: 100%;
-        }
-
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: invert(0);
-        }
-        .dark input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-        }
+        :root { --chart-grid: #e2e8f0; }
+        .dark { --chart-grid: #334155; color-scheme: dark; }
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; }
+        .glass-card { background: rgba(255,255,255,0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+        .dark .glass-card { background: rgba(30,41,59,0.7); border: 1px solid rgba(255,255,255,0.05); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0); }
+        .dark input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+        .streak-fire { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+        .tag { display:inline-block; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:700; }
+        .trend-up { color:#10b981; } .trend-down { color:#ef4444; } .trend-flat { color:#f59e0b; }
+        #importInput { display:none; }
     </style>
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darkBg: '#0f172a',
-                        darkCard: '#1e293b'
-                    }
-                }
-            }
+            theme: { extend: { colors: { darkBg: '#0f172a', darkCard: '#1e293b' } } }
         }
     </script>
 </head>
 <body class="bg-slate-50 dark:bg-darkBg text-slate-900 dark:text-slate-100 min-h-screen pb-12">
 
-    <!-- Header -->
-    <header class="bg-indigo-700 dark:bg-indigo-900 text-white p-6 sticky top-0 z-40 shadow-lg">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="bg-white/20 p-2 rounded-lg">
-                    <i class="fas fa-chart-line text-2xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-800 tracking-tight">JEE ADVANCED TRACKER</h1>
-                    <p class="text-xs text-indigo-200 font-medium uppercase tracking-widest">Performance Analytics</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-4">
-                <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95" title="Toggle Dark Mode">
-                    <i id="theme-icon" class="fas fa-moon text-lg"></i>
-                </button>
-                <button onclick="openModal()" class="hidden md:flex items-center gap-2 bg-white text-indigo-700 px-5 py-2.5 rounded-xl font-bold hover:bg-indigo-50 transition-all shadow-md active:scale-95">
-                    <i class="fas fa-plus"></i> Add Test
-                </button>
+<header class="bg-indigo-700 dark:bg-indigo-900 text-white p-6 sticky top-0 z-40 shadow-lg">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="bg-white/20 p-2 rounded-lg"><i class="fas fa-chart-line text-2xl"></i></div>
+            <div>
+                <h1 class="text-xl font-extrabold tracking-tight">JEE ADVANCED TRACKER</h1>
+                <p class="text-xs text-indigo-200 font-medium uppercase tracking-widest">Performance Analytics</p>
             </div>
         </div>
-    </header>
-
-    <!-- Navigation -->
-    <nav class="bg-white/80 dark:bg-darkCard/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-[88px] z-30">
-        <div class="max-w-6xl mx-auto flex overflow-x-auto custom-scrollbar">
-            <button onclick="setTab('dashboard')" id="tab-dashboard" class="nav-tab px-6 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Dashboard</button>
-            <button onclick="setTab('analytics')" id="tab-analytics" class="nav-tab px-6 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Subject Analysis</button>
-            <button onclick="setTab('predictor')" id="tab-predictor" class="nav-tab px-6 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Rank Predictor</button>
-            <button onclick="setTab('history')" id="tab-history" class="nav-tab px-6 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Test History</button>
-            <button onclick="setTab('settings')" id="tab-settings" class="nav-tab px-6 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Settings</button>
-        </div>
-    </nav>
-
-    <main id="app-content" class="max-w-6xl mx-auto p-4 md:p-8">
-        <!-- Content injected via JS -->
-    </main>
-
-    <!-- Modal for adding scores -->
-    <div id="scoreModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-darkCard rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl scale-95 transition-transform duration-300" id="modalContainer">
-            <div class="p-6 border-b dark:border-slate-800 flex justify-between items-center sticky top-0 bg-white dark:bg-darkCard z-10">
-                <h2 class="text-xl font-bold">Add Mock Result</h2>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <form id="scoreForm" class="p-6 space-y-8">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-bold text-slate-500 mb-1 uppercase tracking-tighter">Test Name</label>
-                        <input type="text" id="testName" required placeholder="e.g. Allen AITS Part Test" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white transition">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-500 mb-1 uppercase tracking-tighter">Date</label>
-                        <input type="date" id="testDate" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white transition">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-500 mb-1 uppercase tracking-tighter">Max Marks (P1 + P2)</label>
-                        <input type="number" id="maxMarks" required placeholder="360" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white transition">
-                    </div>
-                </div>
-
-                <div class="space-y-6">
-                    <div class="p-5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/30">
-                        <h3 class="font-bold text-indigo-700 dark:text-indigo-400 mb-4 flex items-center gap-2">
-                            <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">1</span>
-                            Paper 1 Scores
-                        </h3>
-                        <div class="grid grid-cols-3 gap-3">
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Physics</label>
-                                <input type="number" id="p1p" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Chemistry</label>
-                                <input type="number" id="p1c" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Maths</label>
-                                <input type="number" id="p1m" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30">
-                        <h3 class="font-bold text-emerald-700 dark:text-emerald-400 mb-4 flex items-center gap-2">
-                            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center">2</span>
-                            Paper 2 Scores
-                        </h3>
-                        <div class="grid grid-cols-3 gap-3">
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Physics</label>
-                                <input type="number" id="p2p" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Chemistry</label>
-                                <input type="number" id="p2c" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Maths</label>
-                                <input type="number" id="p2m" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex gap-4 pt-4 sticky bottom-0 bg-white dark:bg-darkCard py-4 border-t dark:border-slate-800">
-                    <button type="button" onclick="closeModal()" class="flex-1 py-3 px-6 rounded-xl border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition">Cancel</button>
-                    <button type="submit" class="flex-[2] py-3 px-6 rounded-xl bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-200 dark:shadow-none hover:bg-indigo-700 transition">Save Test Result</button>
-                </div>
-            </form>
+        <div class="flex items-center gap-3">
+            <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-all active:scale-95" title="Toggle Dark Mode">
+                <i id="theme-icon" class="fas fa-moon text-lg"></i>
+            </button>
+            <button onclick="openModal()" class="hidden md:flex items-center gap-2 bg-white text-indigo-700 px-5 py-2.5 rounded-xl font-bold hover:bg-indigo-50 transition-all shadow-md active:scale-95">
+                <i class="fas fa-plus"></i> Add Test
+            </button>
         </div>
     </div>
+</header>
 
-    <!-- Modal for test details -->
-    <div id="detailsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-darkCard rounded-3xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl scale-95 transition-transform duration-300" id="detailsContainer">
-            <div id="details-content">
-                <!-- Injected via JS -->
-            </div>
-        </div>
+<nav class="bg-white/80 dark:bg-darkCard/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-[88px] z-30">
+    <div class="max-w-6xl mx-auto flex overflow-x-auto custom-scrollbar">
+        <button onclick="setTab('dashboard')" id="tab-dashboard" class="nav-tab px-5 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Dashboard</button>
+        <button onclick="setTab('analytics')" id="tab-analytics" class="nav-tab px-5 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Subject Analysis</button>
+        <button onclick="setTab('predictor')" id="tab-predictor" class="nav-tab px-5 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Rank Predictor</button>
+        <button onclick="setTab('insights')" id="tab-insights" class="nav-tab px-5 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Insights</button>
+        <button onclick="setTab('history')" id="tab-history" class="nav-tab px-5 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Test History</button>
+        <button onclick="setTab('settings')" id="tab-settings" class="nav-tab px-5 py-4 text-sm font-semibold border-b-2 border-transparent transition-all whitespace-nowrap">Settings</button>
     </div>
+</nav>
 
-    <!-- Mobile Add Button -->
-    <button onclick="openModal()" class="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-95 transition-all">
-        <i class="fas fa-plus text-xl"></i>
-    </button>
+<main id="app-content" class="max-w-6xl mx-auto p-4 md:p-8"></main>
 
-    <script>
-        let scores = JSON.parse(localStorage.getItem('jee_adv_v2_scores')) || [];
-        let rankMap = JSON.parse(localStorage.getItem('jee_adv_v2_rankmap')) || [
-            { marks: 300, rank: 100 },
-            { marks: 250, rank: 500 },
-            { marks: 210, rank: 2000 },
-            { marks: 180, rank: 5000 },
-            { marks: 150, rank: 10000 },
-            { marks: 120, rank: 20000 },
-            { marks: 90, rank: 40000 }
-        ];
-        let currentTab = 'dashboard';
-        let chartInstance = null;
-
-        window.onload = () => {
-            renderTab();
-            updateTabUI();
-            if (localStorage.getItem('darkMode') === 'enabled') {
-                document.documentElement.classList.add('dark');
-                document.getElementById('theme-icon').classList.replace('fa-moon', 'fa-sun');
-            }
-        };
-
-        function toggleDarkMode() {
-            const html = document.documentElement;
-            const icon = document.getElementById('theme-icon');
-            if (html.classList.contains('dark')) {
-                html.classList.remove('dark');
-                localStorage.setItem('darkMode', 'disabled');
-                icon.classList.replace('fa-sun', 'fa-moon');
-            } else {
-                html.classList.add('dark');
-                localStorage.setItem('darkMode', 'enabled');
-                icon.classList.replace('fa-moon', 'fa-sun');
-            }
-            renderTab(); 
-        }
-
-        function setTab(tab) {
-            currentTab = tab;
-            renderTab();
-            updateTabUI();
-        }
-
-        function updateTabUI() {
-            document.querySelectorAll('.nav-tab').forEach(btn => {
-                btn.classList.remove('border-indigo-600', 'text-indigo-600', 'dark:text-indigo-400', 'dark:border-indigo-400');
-                if (btn.id === `tab-${currentTab}`) {
-                    btn.classList.add('border-indigo-600', 'text-indigo-600', 'dark:text-indigo-400', 'dark:border-indigo-400');
-                }
-            });
-        }
-
-        function renderTab() {
-            const container = document.getElementById('app-content');
-            if (chartInstance) chartInstance.destroy();
-
-            switch (currentTab) {
-                case 'dashboard': renderDashboard(container); break;
-                case 'analytics': renderAnalytics(container); break;
-                case 'predictor': renderPredictor(container); break;
-                case 'history': renderHistory(container); break;
-                case 'settings': renderSettings(container); break;
-            }
-        }
-
-        function calculateStats() {
-            if (scores.length === 0) return { avg: 0, best: 0, count: 0, latest: 0 };
-            const totalMarks = scores.reduce((acc, s) => acc + s.grandTotal, 0);
-            return {
-                avg: parseFloat((totalMarks / scores.length).toFixed(1)),
-                best: Math.max(...scores.map(s => s.grandTotal)),
-                count: scores.length,
-                latest: scores[scores.length - 1].grandTotal
-            };
-        }
-
-        function renderDashboard(container) {
-            const stats = calculateStats();
-            container.innerHTML = `
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    ${createStatCard('Tests Taken', stats.count, 'fa-file-lines', 'text-blue-500')}
-                    ${createStatCard('Avg Score', stats.avg, 'fa-bullseye', 'text-indigo-500')}
-                    ${createStatCard('Best Marks', stats.best, 'fa-trophy', 'text-emerald-500')}
-                    ${createStatCard('Est. Rank', predictRank(stats.avg), 'fa-ranking-star', 'text-amber-500')}
+<!-- Add Test Modal -->
+<div id="scoreModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-darkCard rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl scale-95 transition-transform duration-300" id="modalContainer">
+        <div class="p-6 border-b dark:border-slate-800 flex justify-between items-center sticky top-0 bg-white dark:bg-darkCard z-10">
+            <h2 class="text-xl font-bold" id="modalTitle">Add Mock Result</h2>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2"><i class="fas fa-times text-xl"></i></button>
+        </div>
+        <form id="scoreForm" class="p-6 space-y-6">
+            <input type="hidden" id="editId" value="">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold text-slate-500 mb-1 uppercase tracking-tighter">Test Name</label>
+                    <input type="text" id="testName" required placeholder="e.g. Allen AITS Part Test" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white transition">
                 </div>
-                
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-2 glass-card p-6 rounded-3xl">
-                        <h3 class="font-bold text-lg mb-6 flex items-center gap-2">
-                            <i class="fas fa-chart-area text-indigo-500"></i> Performance Trend
-                        </h3>
-                        <div class="chart-container">
-                            <canvas id="mainChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="glass-card p-6 rounded-3xl flex flex-col h-[380px] lg:h-auto overflow-hidden">
-                        <h3 class="font-bold text-lg mb-6 flex items-center gap-2">
-                            <i class="fas fa-clock-rotate-left text-indigo-500"></i> Recent Activity
-                        </h3>
-                        <div class="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-2">
-                            ${scores.length === 0 ? '<p class="text-slate-400 text-center py-10">No data available</p>' : 
-                                scores.slice(-10).reverse().map(s => `
-                                    <div onclick="showTestDetails(${s.id})" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                                        <div class="w-10 h-10 shrink-0 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 font-bold text-xs">
-                                            ${Math.round((s.grandTotal/s.maxMarks)*100)}%
-                                        </div>
-                                        <div class="flex-1 overflow-hidden">
-                                            <p class="font-bold text-sm truncate">${s.name}</p>
-                                            <p class="text-[10px] text-slate-400 font-medium">${s.date}</p>
-                                        </div>
-                                        <div class="text-right shrink-0">
-                                            <p class="font-black text-sm">${s.grandTotal}</p>
-                                        </div>
-                                    </div>
-                                `).join('')
-                            }
-                        </div>
-                    </div>
-                </div>
-            `;
-            if (scores.length > 0) setTimeout(initMainChart, 50);
-        }
-
-        function createStatCard(title, val, icon, colorClass) {
-            return `
-                <div class="glass-card p-5 rounded-3xl">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-tighter">${title}</span>
-                        <i class="fas ${icon} ${colorClass} opacity-80"></i>
-                    </div>
-                    <h3 class="text-2xl md:text-3xl font-black">${val}</h3>
-                </div>
-            `;
-        }
-
-        function renderAnalytics(container) {
-            if (scores.length === 0) {
-                container.innerHTML = `<div class="text-center py-20 bg-white dark:bg-darkCard rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800">
-                    <i class="fas fa-chart-pie text-5xl text-slate-200 mb-4"></i>
-                    <p class="text-slate-500 font-medium">Add at least one test to unlock subject analytics.</p>
-                </div>`;
-                return;
-            }
-            const pTotal = scores.reduce((a, b) => a + b.subj.p, 0) / scores.length;
-            const cTotal = scores.reduce((a, b) => a + b.subj.c, 0) / scores.length;
-            const mTotal = scores.reduce((a, b) => a + b.subj.m, 0) / scores.length;
-            container.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="glass-card p-6 rounded-3xl">
-                        <h3 class="font-bold text-lg mb-6">Average Subject Balance</h3>
-                        <div class="chart-container">
-                            <canvas id="subjectPie"></canvas>
-                        </div>
-                    </div>
-                    <div class="glass-card p-6 rounded-3xl">
-                        <h3 class="font-bold text-lg mb-6">Subject Consistency</h3>
-                        <div class="chart-container">
-                            <canvas id="subjectStack"></canvas>
-                        </div>
-                    </div>
-                </div>
-            `;
-            setTimeout(() => initSubjectCharts(pTotal, cTotal, mTotal), 50);
-        }
-
-        function renderPredictor(container) {
-            const stats = calculateStats();
-            const predictedRank = predictRank(stats.avg);
-            container.innerHTML = `
-                <div class="max-w-3xl mx-auto space-y-6">
-                    <div class="bg-gradient-to-br from-indigo-600 to-violet-700 text-white p-10 rounded-[2.5rem] shadow-xl relative overflow-hidden">
-                        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
-                        <div class="relative z-10 text-center">
-                            <i class="fas fa-wand-magic-sparkles text-4xl mb-4 opacity-80"></i>
-                            <h2 class="text-4xl font-black mb-2">Rank Prediction</h2>
-                            <p class="text-indigo-100 font-medium mb-8">Estimated based on your average of ${stats.count} tests</p>
-                            <div class="grid grid-cols-2 gap-6">
-                                <div class="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/10">
-                                    <p class="text-[10px] uppercase font-black tracking-widest opacity-60 mb-1">Expected Total</p>
-                                    <p class="text-4xl font-black">${stats.avg}</p>
-                                </div>
-                                <div class="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/10">
-                                    <p class="text-[10px] uppercase font-black tracking-widest opacity-60 mb-1">Expected AIR</p>
-                                    <p class="text-4xl font-black">${predictedRank}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="glass-card p-8 rounded-[2.5rem]">
-                        <h3 class="font-bold text-lg mb-6 flex items-center gap-2">
-                            <i class="fas fa-circle-exclamation text-amber-500"></i> Subject Breakdown
-                        </h3>
-                        <div class="space-y-6">
-                            ${createProgress('Physics', (scores.reduce((a,b)=>a+b.subj.p,0)/scores.length).toFixed(1), 'bg-blue-500')}
-                            ${createProgress('Chemistry', (scores.reduce((a,b)=>a+b.subj.c,0)/scores.length).toFixed(1), 'bg-emerald-500')}
-                            ${createProgress('Mathematics', (scores.reduce((a,b)=>a+b.subj.m,0)/scores.length).toFixed(1), 'bg-amber-500')}
-                        </div>
-                        <p class="mt-8 text-xs text-slate-400 text-center italic">Calculations use linear interpolation between your calibration points in Settings.</p>
-                    </div>
-                </div>
-            `;
-        }
-
-        function createProgress(label, val, color) {
-            const perc = Math.min(100, (val / 120) * 100);
-            return `
                 <div>
-                    <div class="flex justify-between text-sm font-bold mb-2">
-                        <span>${label}</span>
-                        <span class="text-slate-400">${val} <small class="text-[10px]">/ 120 avg</small></span>
-                    </div>
-                    <div class="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                        <div class="h-full ${color} rounded-full transition-all duration-1000" style="width: ${perc}%"></div>
+                    <label class="block text-sm font-bold text-slate-500 mb-1 uppercase tracking-tighter">Date</label>
+                    <input type="date" id="testDate" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 mb-1 uppercase tracking-tighter">Max Marks (P1 + P2)</label>
+                    <input type="number" id="maxMarks" required placeholder="360" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white transition">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold text-slate-500 mb-1 uppercase tracking-tighter">Test Series / Label <span class="text-slate-300">(optional)</span></label>
+                    <input type="text" id="testSeries" placeholder="e.g. Allen, Fiitjee, Self" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white transition">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold text-slate-500 mb-1 uppercase tracking-tighter">Notes <span class="text-slate-300">(optional)</span></label>
+                    <textarea id="testNotes" rows="2" placeholder="e.g. Careless mistakes in P2 chemistry..." class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white transition resize-none"></textarea>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div class="p-5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/30">
+                    <h3 class="font-bold text-indigo-700 dark:text-indigo-400 mb-4 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">1</span> Paper 1 Scores
+                    </h3>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Physics</label><input type="number" id="p1p" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700"></div>
+                        <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Chemistry</label><input type="number" id="p1c" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700"></div>
+                        <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Maths</label><input type="number" id="p1m" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700"></div>
                     </div>
                 </div>
-            `;
-        }
+                <div class="p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30">
+                    <h3 class="font-bold text-emerald-700 dark:text-emerald-400 mb-4 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center">2</span> Paper 2 Scores
+                    </h3>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Physics</label><input type="number" id="p2p" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700"></div>
+                        <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Chemistry</label><input type="number" id="p2c" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700"></div>
+                        <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Maths</label><input type="number" id="p2m" value="0" class="w-full p-2 rounded-lg border dark:bg-slate-900 dark:border-slate-700"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-4 pt-2 sticky bottom-0 bg-white dark:bg-darkCard py-4 border-t dark:border-slate-800">
+                <button type="button" onclick="closeModal()" class="flex-1 py-3 px-6 rounded-xl border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition">Cancel</button>
+                <button type="submit" id="saveBtn" class="flex-[2] py-3 px-6 rounded-xl bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-200 dark:shadow-none hover:bg-indigo-700 transition">Save Test Result</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-        function renderHistory(container) {
-            container.innerHTML = `
+<!-- Details Modal -->
+<div id="detailsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-darkCard rounded-3xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl scale-95 transition-transform duration-300" id="detailsContainer">
+        <div id="details-content"></div>
+    </div>
+</div>
+
+<input type="file" id="importInput" accept=".csv" onchange="handleCSVImport(event)">
+
+<button onclick="openModal()" class="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-95 transition-all">
+    <i class="fas fa-plus text-xl"></i>
+</button>
+
+<script>
+let scores = JSON.parse(localStorage.getItem('jee_adv_v3_scores')) || [];
+let rankMap = JSON.parse(localStorage.getItem('jee_adv_v3_rankmap')) || [
+    {marks:332,rank:1},{marks:307,rank:25},{marks:278,rank:101},{marks:234,rank:501},
+    {marks:208,rank:1001},{marks:181,rank:2001},{marks:154,rank:4001},{marks:145,rank:5001},
+    {marks:138,rank:6001},{marks:133,rank:7001},{marks:128,rank:8001},{marks:124,rank:9001},
+    {marks:120,rank:9801},{marks:113,rank:12001}
+];
+let currentTab = 'dashboard';
+let chartInstance = null;
+let editingId = null;
+
+window.onload = () => {
+    renderTab(); updateTabUI();
+    if (localStorage.getItem('darkMode') === 'enabled') {
+        document.documentElement.classList.add('dark');
+        document.getElementById('theme-icon').classList.replace('fa-moon','fa-sun');
+    }
+};
+
+function toggleDarkMode() {
+    const html = document.documentElement, icon = document.getElementById('theme-icon');
+    if (html.classList.contains('dark')) {
+        html.classList.remove('dark'); localStorage.setItem('darkMode','disabled');
+        icon.classList.replace('fa-sun','fa-moon');
+    } else {
+        html.classList.add('dark'); localStorage.setItem('darkMode','enabled');
+        icon.classList.replace('fa-moon','fa-sun');
+    }
+    renderTab();
+}
+
+function setTab(tab) { currentTab = tab; renderTab(); updateTabUI(); }
+function updateTabUI() {
+    document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.classList.remove('border-indigo-600','text-indigo-600','dark:text-indigo-400','dark:border-indigo-400');
+        if (btn.id === `tab-${currentTab}`) btn.classList.add('border-indigo-600','text-indigo-600','dark:text-indigo-400','dark:border-indigo-400');
+    });
+}
+
+function saveScores() { localStorage.setItem('jee_adv_v3_scores', JSON.stringify(scores)); }
+
+function renderTab() {
+    const c = document.getElementById('app-content');
+    if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+    switch(currentTab) {
+        case 'dashboard': renderDashboard(c); break;
+        case 'analytics': renderAnalytics(c); break;
+        case 'predictor': renderPredictor(c); break;
+        case 'insights': renderInsights(c); break;
+        case 'history': renderHistory(c); break;
+        case 'settings': renderSettings(c); break;
+    }
+}
+
+function calculateStats() {
+    if (!scores.length) return {avg:0,best:0,count:0,latest:0,worst:0};
+    const totals = scores.map(s=>s.grandTotal);
+    return {
+        avg: parseFloat((totals.reduce((a,b)=>a+b,0)/totals.length).toFixed(1)),
+        best: Math.max(...totals), worst: Math.min(...totals),
+        count: scores.length, latest: scores[scores.length-1].grandTotal
+    };
+}
+
+function getTrend() {
+    if (scores.length < 2) return null;
+    const last5 = scores.slice(-5).map(s=>s.grandTotal);
+    const first = last5.slice(0,Math.floor(last5.length/2)).reduce((a,b)=>a+b,0)/Math.floor(last5.length/2);
+    const last = last5.slice(Math.ceil(last5.length/2)).reduce((a,b)=>a+b,0)/Math.ceil(last5.length/2);
+    const diff = last - first;
+    if (diff > 5) return {dir:'up',val:'+'+diff.toFixed(1)};
+    if (diff < -5) return {dir:'down',val:diff.toFixed(1)};
+    return {dir:'flat',val:'~0'};
+}
+
+function getStreak() {
+    if (!scores.length) return 0;
+    let streak = 0;
+    const sorted = [...scores].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    for (let i=0; i<sorted.length-1; i++) {
+        if (sorted[i].grandTotal > sorted[i+1].grandTotal) streak++;
+        else break;
+    }
+    return streak;
+}
+
+function getWeakestSubject() {
+    if (!scores.length) return null;
+    const avgP = scores.reduce((a,b)=>a+b.subj.p,0)/scores.length;
+    const avgC = scores.reduce((a,b)=>a+b.subj.c,0)/scores.length;
+    const avgM = scores.reduce((a,b)=>a+b.subj.m,0)/scores.length;
+    const min = Math.min(avgP, avgC, avgM);
+    if (min === avgP) return {name:'Physics',avg:avgP.toFixed(1),icon:'fa-atom',color:'text-blue-500'};
+    if (min === avgC) return {name:'Chemistry',avg:avgC.toFixed(1),icon:'fa-flask',color:'text-emerald-500'};
+    return {name:'Mathematics',avg:avgM.toFixed(1),icon:'fa-square-root-variable',color:'text-amber-500'};
+}
+
+function renderDashboard(container) {
+    const stats = calculateStats();
+    const trend = getTrend();
+    const streak = getStreak();
+    const weak = getWeakestSubject();
+    const rankEst = predictRank(stats.avg);
+    const rankBest = predictRank(stats.best);
+
+    container.innerHTML = `
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            ${createStatCard('Tests Taken', stats.count, 'fa-file-lines', 'text-blue-500')}
+            ${createStatCard('Avg Score', stats.avg, 'fa-bullseye', 'text-indigo-500')}
+            ${createStatCard('Best Marks', stats.best, 'fa-trophy', 'text-emerald-500')}
+            ${createStatCard('Est. Rank (Avg)', rankEst, 'fa-ranking-star', 'text-amber-500')}
+        </div>
+
+        ${scores.length > 1 ? `
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="glass-card p-4 rounded-2xl flex items-center gap-4">
+                <div class="text-3xl streak-fire">🔥</div>
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase">Improvement Streak</p>
+                    <p class="text-2xl font-black">${streak} test${streak!==1?'s':''}</p>
+                </div>
+            </div>
+            <div class="glass-card p-4 rounded-2xl flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl ${trend&&trend.dir==='up'?'bg-emerald-100 dark:bg-emerald-900/30':trend&&trend.dir==='down'?'bg-red-100 dark:bg-red-900/30':'bg-amber-100 dark:bg-amber-900/30'} flex items-center justify-center">
+                    <i class="fas ${trend&&trend.dir==='up'?'fa-arrow-trend-up trend-up':trend&&trend.dir==='down'?'fa-arrow-trend-down trend-down':'fa-minus trend-flat'} text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase">Recent Trend</p>
+                    <p class="text-2xl font-black ${trend&&trend.dir==='up'?'trend-up':trend&&trend.dir==='down'?'trend-down':'trend-flat'}">${trend?trend.val:'—'}</p>
+                </div>
+            </div>
+            ${weak ? `
+            <div class="glass-card p-4 rounded-2xl flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                    <i class="fas ${weak.icon} text-red-500 text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase">Focus Area</p>
+                    <p class="text-lg font-black">${weak.name}</p>
+                    <p class="text-[10px] text-slate-400">Avg: ${weak.avg} / 120</p>
+                </div>
+            </div>` : ''}
+        </div>` : ''}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 glass-card p-6 rounded-3xl">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-black">Test Vault</h2>
-                    <div class="flex gap-2">
-                        <button onclick="exportCSV()" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition"><i class="fas fa-file-csv"></i></button>
-                    </div>
+                    <h3 class="font-bold text-lg flex items-center gap-2">
+                        <i class="fas fa-chart-area text-indigo-500"></i> Performance Trend
+                    </h3>
+                    ${scores.length>1?`<span class="text-xs text-slate-400">Best possible rank: <strong>${rankBest}</strong></span>`:''}
                 </div>
-                <div class="space-y-4">
-                    ${scores.length === 0 ? `
-                        <div class="text-center py-20 glass-card rounded-3xl border-2 border-dashed">
-                            <p class="text-slate-400">Empty vault. Add some mocks to get started.</p>
-                        </div>
-                    ` : scores.slice().reverse().map(s => `
-                        <div onclick="showTestDetails(${s.id})" class="glass-card p-5 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-indigo-500 transition group cursor-pointer relative overflow-hidden">
-                            <div class="flex items-center gap-4 relative z-10">
-                                <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                                    <i class="fas fa-calendar-check"></i>
+                <div class="chart-container"><canvas id="mainChart"></canvas></div>
+            </div>
+            <div class="glass-card p-6 rounded-3xl flex flex-col h-[380px] lg:h-auto overflow-hidden">
+                <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+                    <i class="fas fa-clock-rotate-left text-indigo-500"></i> Recent Tests
+                </h3>
+                <div class="space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-1">
+                    ${!scores.length ? '<p class="text-slate-400 text-center py-10 text-sm">No data yet</p>' :
+                        scores.slice(-10).reverse().map(s => {
+                            const prev = scores[scores.indexOf(s)-1];
+                            const delta = prev ? s.grandTotal - prev.grandTotal : null;
+                            return `<div onclick="showTestDetails(${s.id})" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                                <div class="w-10 h-10 shrink-0 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 font-bold text-xs">${Math.round((s.grandTotal/s.maxMarks)*100)}%</div>
+                                <div class="flex-1 overflow-hidden">
+                                    <p class="font-bold text-sm truncate">${s.name}</p>
+                                    <p class="text-[10px] text-slate-400">${s.date}${s.series?` • ${s.series}`:''}</p>
                                 </div>
-                                <div>
-                                    <h4 class="font-black text-slate-800 dark:text-slate-100">${s.name}</h4>
-                                    <p class="text-xs text-slate-400 font-semibold">${s.date} • Max Marks: ${s.maxMarks}</p>
+                                <div class="text-right shrink-0">
+                                    <p class="font-black text-sm">${s.grandTotal}</p>
+                                    ${delta!==null?`<p class="text-[10px] font-bold ${delta>0?'text-emerald-500':delta<0?'text-red-400':'text-slate-400'}">${delta>0?'+':''}${delta}</p>`:''}
                                 </div>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto relative z-10">
-                                <div class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold">P1: ${s.p1Total}</div>
-                                <div class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold">P2: ${s.p2Total}</div>
-                                <div class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black">Score: ${s.grandTotal}</div>
-                                <button onclick="event.stopPropagation(); deleteScore(${s.id})" class="p-2 text-slate-400 hover:text-red-500 transition md:opacity-0 group-hover:opacity-100">
-                                    <i class="fas fa-trash-can"></i>
-                                </button>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-
-        function showTestDetails(id) {
-            const test = scores.find(s => s.id === id);
-            if (!test) return;
-
-            const modal = document.getElementById('detailsModal');
-            const content = document.getElementById('details-content');
-            const perc = ((test.grandTotal / test.maxMarks) * 100).toFixed(1);
-
-            content.innerHTML = `
-                <div class="p-8 space-y-6">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h2 class="text-2xl font-black text-indigo-600 dark:text-indigo-400">${test.name}</h2>
-                            <p class="text-slate-400 font-bold uppercase text-[10px] tracking-widest">${test.date}</p>
-                        </div>
-                        <button onclick="closeDetails()" class="text-slate-300 hover:text-slate-500"><i class="fas fa-times text-xl"></i></button>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl text-center">
-                            <p class="text-[10px] font-black text-slate-400 uppercase">Grand Total</p>
-                            <p class="text-3xl font-black">${test.grandTotal} <small class="text-sm text-slate-400">/ ${test.maxMarks}</small></p>
-                        </div>
-                        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl text-center">
-                            <p class="text-[10px] font-black text-slate-400 uppercase">Percentage</p>
-                            <p class="text-3xl font-black text-emerald-500">${perc}%</p>
-                        </div>
-                    </div>
-
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-4">
-                            <div class="flex-1">
-                                <h4 class="font-bold mb-2">Subject Breakdown</h4>
-                                <div class="space-y-2">
-                                    <div class="flex justify-between text-xs font-bold">
-                                        <span class="text-blue-500">Physics</span>
-                                        <span>${test.subj.p}</span>
-                                    </div>
-                                    <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                        <div class="h-full bg-blue-500" style="width: ${(test.subj.p / (test.maxMarks/3) * 100)}%"></div>
-                                    </div>
-                                    <div class="flex justify-between text-xs font-bold">
-                                        <span class="text-emerald-500">Chemistry</span>
-                                        <span>${test.subj.c}</span>
-                                    </div>
-                                    <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                        <div class="h-full bg-emerald-500" style="width: ${(test.subj.c / (test.maxMarks/3) * 100)}%"></div>
-                                    </div>
-                                    <div class="flex justify-between text-xs font-bold">
-                                        <span class="text-amber-500">Mathematics</span>
-                                        <span>${test.subj.m}</span>
-                                    </div>
-                                    <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                        <div class="h-full bg-amber-500" style="width: ${(test.subj.m / (test.maxMarks/3) * 100)}%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="border-t dark:border-slate-800 pt-4 grid grid-cols-2 gap-8">
-                            <div>
-                                <h4 class="text-xs font-black uppercase text-slate-400 mb-2">Paper 1</h4>
-                                <p class="text-xl font-black">${test.p1Total}</p>
-                                <p class="text-[10px] text-slate-400">Contribution: ${((test.p1Total/test.grandTotal)*100).toFixed(0)}%</p>
-                            </div>
-                            <div>
-                                <h4 class="text-xs font-black uppercase text-slate-400 mb-2">Paper 2</h4>
-                                <p class="text-xl font-black">${test.p2Total}</p>
-                                <p class="text-[10px] text-slate-400">Contribution: ${((test.p2Total/test.grandTotal)*100).toFixed(0)}%</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button onclick="closeDetails()" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold">Close Details</button>
-                </div>
-            `;
-
-            modal.classList.remove('hidden');
-            setTimeout(() => document.getElementById('detailsContainer').classList.remove('scale-95'), 10);
-        }
-
-        function closeDetails() {
-            document.getElementById('detailsContainer').classList.add('scale-95');
-            setTimeout(() => document.getElementById('detailsModal').classList.add('hidden'), 200);
-        }
-
-        function renderSettings(container) {
-            container.innerHTML = `
-                <div class="max-w-2xl mx-auto space-y-8">
-                    <div class="glass-card p-8 rounded-[2rem]">
-                        <h3 class="font-bold text-xl mb-6">Rank-Marks Calibration</h3>
-                        <p class="text-sm text-slate-500 mb-8">Update these thresholds to match the expected difficulty of the current year JEE Advanced.</p>
-                        <div id="rankmap-list" class="space-y-3">
-                            <div class="flex gap-3 px-3 text-[10px] font-black uppercase text-slate-400 tracking-wider">
-                                <div class="flex-1">Marks</div>
-                                <div class="flex-1">Expected Rank</div>
-                                <div class="w-10"></div>
-                            </div>
-                            ${rankMap.map((rm, idx) => `
-                                <div class="flex gap-3 items-center">
-                                    <div class="flex-1">
-                                        <input type="number" value="${rm.marks}" onchange="updateRankMap(${idx}, 'marks', this.value)" class="w-full p-3 rounded-xl border dark:bg-slate-900 dark:border-slate-800 outline-none focus:ring-2 focus:ring-indigo-500">
-                                    </div>
-                                    <div class="flex-1">
-                                        <input type="number" value="${rm.rank}" onchange="updateRankMap(${idx}, 'rank', this.value)" class="w-full p-3 rounded-xl border dark:bg-slate-900 dark:border-slate-800 outline-none focus:ring-2 focus:ring-indigo-500">
-                                    </div>
-                                    <button onclick="deleteRankMapRow(${idx})" class="w-10 text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition"><i class="fas fa-minus-circle"></i></button>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <button onclick="addRankMapRow()" class="w-full mt-4 py-3 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-indigo-500 hover:border-indigo-500 transition flex items-center justify-center gap-2 font-bold">
-                            <i class="fas fa-plus-circle"></i> Add Calibration Point
-                        </button>
-                    </div>
-                    <div class="bg-red-50 dark:bg-red-900/10 p-6 rounded-2xl border border-red-100 dark:border-red-900/30 flex justify-between items-center">
-                        <div>
-                            <h4 class="font-bold text-red-600">Nuclear Option</h4>
-                            <p class="text-xs text-red-400">Wipe all stored tests and settings permanently.</p>
-                        </div>
-                        <button onclick="clearData()" class="px-6 py-2 bg-red-600 text-white rounded-xl font-bold text-sm">Reset App</button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function openModal() {
-            document.getElementById('scoreModal').classList.remove('hidden');
-            setTimeout(() => document.getElementById('modalContainer').classList.remove('scale-95'), 10);
-            document.getElementById('testDate').valueAsDate = new Date();
-        }
-
-        function closeModal() {
-            document.getElementById('modalContainer').classList.add('scale-95');
-            setTimeout(() => document.getElementById('scoreModal').classList.add('hidden'), 200);
-        }
-
-        document.getElementById('scoreForm').onsubmit = (e) => {
-            e.preventDefault();
-            const p1 = {
-                p: parseInt(document.getElementById('p1p').value) || 0,
-                c: parseInt(document.getElementById('p1c').value) || 0,
-                m: parseInt(document.getElementById('p1m').value) || 0
-            };
-            const p2 = {
-                p: parseInt(document.getElementById('p2p').value) || 0,
-                c: parseInt(document.getElementById('p2c').value) || 0,
-                m: parseInt(document.getElementById('p2m').value) || 0
-            };
-            const p1Total = p1.p + p1.c + p1.m;
-            const p2Total = p2.p + p2.c + p2.m;
-            const newEntry = {
-                id: Date.now(),
-                name: document.getElementById('testName').value,
-                date: document.getElementById('testDate').value,
-                maxMarks: parseInt(document.getElementById('maxMarks').value),
-                p1Total, p2Total,
-                grandTotal: p1Total + p2Total,
-                subj: { p: p1.p + p2.p, c: p1.c + p2.c, m: p1.m + p2.m }
-            };
-            scores.push(newEntry);
-            scores.sort((a, b) => new Date(a.date) - new Date(b.date));
-            localStorage.setItem('jee_adv_v2_scores', JSON.stringify(scores));
-            closeModal();
-            renderTab();
-            document.getElementById('scoreForm').reset();
-        };
-
-        function deleteScore(id) {
-            scores = scores.filter(s => s.id !== id);
-            localStorage.setItem('jee_adv_v2_scores', JSON.stringify(scores));
-            renderTab();
-        }
-
-        function predictRank(marks) {
-            if (isNaN(marks)) return "N/A";
-            const sortedMap = [...rankMap].sort((a, b) => b.marks - a.marks);
-            if (sortedMap.length === 0) return "N/A";
-            if (marks >= sortedMap[0].marks) return `~ ${sortedMap[0].rank}`;
-            if (marks <= sortedMap[sortedMap.length - 1].marks) return `> ${sortedMap[sortedMap.length - 1].rank}`;
-            for (let i = 0; i < sortedMap.length - 1; i++) {
-                const mUpper = sortedMap[i].marks;
-                const rUpper = sortedMap[i].rank;
-                const mLower = sortedMap[i+1].marks;
-                const rLower = sortedMap[i+1].rank;
-                if (marks <= mUpper && marks >= mLower) {
-                    const slope = (rLower - rUpper) / (mLower - mUpper);
-                    return Math.round(rUpper + (marks - mUpper) * slope);
-                }
-            }
-            return "N/A";
-        }
-
-        function updateRankMap(idx, key, val) {
-            rankMap[idx][key] = parseInt(val);
-            localStorage.setItem('jee_adv_v2_rankmap', JSON.stringify(rankMap));
-        }
-
-        function addRankMapRow() {
-            rankMap.push({ marks: 0, rank: 0 });
-            renderSettings(document.getElementById('app-content'));
-        }
-
-        function deleteRankMapRow(idx) {
-            rankMap = rankMap.filter((_, i) => i !== idx);
-            localStorage.setItem('jee_adv_v2_rankmap', JSON.stringify(rankMap));
-            renderSettings(document.getElementById('app-content'));
-        }
-
-        function clearData() {
-            if (confirm("Permanently delete all your scores?")) {
-                localStorage.removeItem('jee_adv_v2_scores');
-                localStorage.removeItem('jee_adv_v2_rankmap');
-                location.reload();
-            }
-        }
-
-        function exportCSV() {
-            if (scores.length === 0) return;
-            const headers = "Date,Name,P1,P2,Total,MaxMarks\n";
-            const body = scores.map(s => `${s.date},${s.name},${s.p1Total},${s.p2Total},${s.grandTotal},${s.maxMarks}`).join('\n');
-            const blob = new Blob([headers + body], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.setAttribute('href', url);
-            a.setAttribute('download', `jee_mock_results.csv`);
-            a.click();
-        }
-
-        function initMainChart() {
-            const canvas = document.getElementById('mainChart');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            const isDark = document.documentElement.classList.contains('dark');
-            chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: scores.map(s => s.date.split('-').slice(1).join('/')),
-                    datasets: [{
-                        label: 'Score',
-                        data: scores.map(s => s.grandTotal),
-                        borderColor: '#6366f1',
-                        backgroundColor: isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.05)',
-                        fill: true,
-                        tension: 0.3,
-                        borderWidth: 4,
-                        pointRadius: 5,
-                        pointBackgroundColor: '#6366f1'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: isDark ? '#334155' : '#f1f5f9' }, ticks: { color: isDark ? '#94a3b8' : '#64748b' } },
-                        x: { grid: { display: false }, ticks: { color: isDark ? '#94a3b8' : '#64748b' } }
+                            </div>`;
+                        }).join('')
                     }
-                }
-            });
-        }
+                </div>
+            </div>
+        </div>
+    `;
+    if (scores.length > 0) setTimeout(initMainChart, 50);
+}
 
-        function initSubjectCharts(p, c, m) {
-            const isDark = document.documentElement.classList.contains('dark');
-            const labelColor = isDark ? '#94a3b8' : '#64748b';
-            new Chart(document.getElementById('subjectPie'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Physics', 'Chemistry', 'Maths'],
-                    datasets: [{
-                        data: [p, c, m],
-                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { color: labelColor } } },
-                    cutout: '70%'
-                }
-            });
-            new Chart(document.getElementById('subjectStack'), {
-                type: 'bar',
-                data: {
-                    labels: scores.map(s => s.name.length > 10 ? s.name.slice(0, 8) + '..' : s.name),
-                    datasets: [
-                        { label: 'Physics', data: scores.map(s => s.subj.p), backgroundColor: '#3b82f6' },
-                        { label: 'Chemistry', data: scores.map(s => s.subj.c), backgroundColor: '#10b981' },
-                        { label: 'Maths', data: scores.map(s => s.subj.m), backgroundColor: '#f59e0b' }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { stacked: true, grid: { display: false }, ticks: { color: labelColor } },
-                        y: { stacked: true, grid: { color: isDark ? '#334155' : '#f1f5f9' }, ticks: { color: labelColor } }
-                    },
-                    plugins: { legend: { position: 'bottom', labels: { color: labelColor } } }
-                }
-            });
+function createStatCard(title, val, icon, colorClass) {
+    return `<div class="glass-card p-5 rounded-3xl">
+        <div class="flex justify-between items-start mb-2">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-tighter">${title}</span>
+            <i class="fas ${icon} ${colorClass} opacity-80"></i>
+        </div>
+        <h3 class="text-2xl md:text-3xl font-black">${val}</h3>
+    </div>`;
+}
+
+function renderAnalytics(container) {
+    if (!scores.length) {
+        container.innerHTML = `<div class="text-center py-20 bg-white dark:bg-darkCard rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800"><i class="fas fa-chart-pie text-5xl text-slate-200 mb-4"></i><p class="text-slate-500 font-medium">Add at least one test to unlock analytics.</p></div>`;
+        return;
+    }
+    const avgP = scores.reduce((a,b)=>a+b.subj.p,0)/scores.length;
+    const avgC = scores.reduce((a,b)=>a+b.subj.c,0)/scores.length;
+    const avgM = scores.reduce((a,b)=>a+b.subj.m,0)/scores.length;
+
+    // Standard deviation per subject
+    const sdOf = arr => { const m = arr.reduce((a,b)=>a+b,0)/arr.length; return Math.sqrt(arr.reduce((a,b)=>a+(b-m)**2,0)/arr.length).toFixed(1); };
+    const sdP = sdOf(scores.map(s=>s.subj.p));
+    const sdC = sdOf(scores.map(s=>s.subj.c));
+    const sdM = sdOf(scores.map(s=>s.subj.m));
+
+    // Paper 1 vs Paper 2 averages
+    const avgP1 = scores.reduce((a,b)=>a+b.p1Total,0)/scores.length;
+    const avgP2 = scores.reduce((a,b)=>a+b.p2Total,0)/scores.length;
+
+    container.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            ${[['Physics','text-blue-500','bg-blue-50 dark:bg-blue-900/20',avgP.toFixed(1),sdP],
+               ['Chemistry','text-emerald-500','bg-emerald-50 dark:bg-emerald-900/20',avgC.toFixed(1),sdC],
+               ['Maths','text-amber-500','bg-amber-50 dark:bg-amber-900/20',avgM.toFixed(1),sdM]].map(([sub,col,bg,avg,sd])=>`
+            <div class="glass-card p-5 rounded-2xl">
+                <p class="text-xs font-black uppercase ${col} mb-1">${sub}</p>
+                <p class="text-3xl font-black">${avg}<small class="text-sm text-slate-400"> / 120</small></p>
+                <p class="text-xs text-slate-400 mt-1">Consistency σ: <strong>${sd}</strong> <span class="text-[10px]">(lower = more consistent)</span></p>
+                <div class="mt-3 w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div class="h-full ${col.replace('text','bg')} rounded-full" style="width:${Math.min(100,(avg/120)*100)}%"></div>
+                </div>
+            </div>`).join('')}
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="glass-card p-6 rounded-3xl">
+                <h3 class="font-bold text-lg mb-4">Subject Balance (avg)</h3>
+                <div class="chart-container"><canvas id="subjectPie"></canvas></div>
+            </div>
+            <div class="glass-card p-6 rounded-3xl">
+                <h3 class="font-bold text-lg mb-4">Per-Test Subject Breakdown</h3>
+                <div class="chart-container"><canvas id="subjectStack"></canvas></div>
+            </div>
+        </div>
+        <div class="glass-card p-6 rounded-3xl">
+            <h3 class="font-bold text-lg mb-4">Paper 1 vs Paper 2 Performance</h3>
+            <div class="grid grid-cols-2 gap-6 mb-4">
+                <div class="text-center p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl">
+                    <p class="text-xs font-black text-indigo-400 uppercase">Avg Paper 1</p>
+                    <p class="text-3xl font-black">${avgP1.toFixed(1)}</p>
+                </div>
+                <div class="text-center p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl">
+                    <p class="text-xs font-black text-emerald-400 uppercase">Avg Paper 2</p>
+                    <p class="text-3xl font-black">${avgP2.toFixed(1)}</p>
+                </div>
+            </div>
+            <div class="chart-container" style="height:220px"><canvas id="paperChart"></canvas></div>
+        </div>
+    `;
+    setTimeout(() => initSubjectCharts(avgP, avgC, avgM), 50);
+}
+
+function renderPredictor(container) {
+    const stats = calculateStats();
+    if (!scores.length) {
+        container.innerHTML = `<div class="text-center py-20 bg-white dark:bg-darkCard rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800"><p class="text-slate-500">Add tests to see rank predictions.</p></div>`;
+        return;
+    }
+    const scenarios = [
+        {label:'Conservative (Avg)', marks: stats.avg},
+        {label:'Optimistic (Best)', marks: stats.best},
+        {label:'Worst Case', marks: stats.worst},
+        {label:'Last Test', marks: stats.latest}
+    ];
+    container.innerHTML = `
+        <div class="max-w-3xl mx-auto space-y-6">
+            <div class="bg-gradient-to-br from-indigo-600 to-violet-700 text-white p-10 rounded-[2.5rem] shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center gap-3 mb-6">
+                        <i class="fas fa-wand-magic-sparkles text-3xl opacity-80"></i>
+                        <h2 class="text-2xl font-black">Rank Scenarios</h2>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${scenarios.map(s=>`
+                        <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                            <p class="text-[10px] uppercase font-black tracking-widest opacity-60 mb-1">${s.label}</p>
+                            <p class="text-2xl font-black">${s.marks}</p>
+                            <p class="text-sm font-bold opacity-80">→ AIR ${predictRank(s.marks)}</p>
+                        </div>`).join('')}
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card p-8 rounded-[2.5rem]">
+                <h3 class="font-bold text-lg mb-2">Target Rank Calculator</h3>
+                <p class="text-sm text-slate-400 mb-6">Enter a desired rank to see the marks you need.</p>
+                <div class="flex gap-3 mb-6">
+                    <input type="number" id="targetRankInput" placeholder="e.g. 500" class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                    <button onclick="calcTargetMarks()" class="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition">Calculate</button>
+                </div>
+                <div id="targetResult" class="hidden p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl text-center">
+                    <p class="text-xs text-indigo-400 uppercase font-black mb-1">Required Marks</p>
+                    <p id="targetMarksVal" class="text-4xl font-black text-indigo-600 dark:text-indigo-400"></p>
+                    <p id="targetGapVal" class="text-sm text-slate-400 mt-1"></p>
+                </div>
+            </div>
+
+            <div class="glass-card p-8 rounded-[2.5rem]">
+                <h3 class="font-bold text-lg mb-6 flex items-center gap-2">
+                    <i class="fas fa-circle-exclamation text-amber-500"></i> Subject Averages vs Target (120 each)
+                </h3>
+                <div class="space-y-6">
+                    ${createProgress('Physics', (scores.reduce((a,b)=>a+b.subj.p,0)/scores.length).toFixed(1), 'bg-blue-500')}
+                    ${createProgress('Chemistry', (scores.reduce((a,b)=>a+b.subj.c,0)/scores.length).toFixed(1), 'bg-emerald-500')}
+                    ${createProgress('Mathematics', (scores.reduce((a,b)=>a+b.subj.m,0)/scores.length).toFixed(1), 'bg-amber-500')}
+                </div>
+                <p class="mt-6 text-xs text-slate-400 text-center italic">Rank interpolated from calibration table in Settings.</p>
+            </div>
+        </div>
+    `;
+}
+
+function calcTargetMarks() {
+    const rank = parseInt(document.getElementById('targetRankInput').value);
+    if (!rank || rank <= 0) return;
+    const sorted = [...rankMap].sort((a,b)=>a.rank-b.rank);
+    let marks;
+    if (rank <= sorted[0].rank) marks = sorted[0].marks;
+    else if (rank >= sorted[sorted.length-1].rank) marks = sorted[sorted.length-1].marks;
+    else {
+        for (let i=0; i<sorted.length-1; i++) {
+            if (rank >= sorted[i].rank && rank <= sorted[i+1].rank) {
+                const slope = (sorted[i+1].marks - sorted[i].marks) / (sorted[i+1].rank - sorted[i].rank);
+                marks = Math.round(sorted[i].marks + (rank - sorted[i].rank) * slope);
+                break;
+            }
         }
-    </script>
+    }
+    const stats = calculateStats();
+    const gap = marks - stats.avg;
+    document.getElementById('targetMarksVal').textContent = marks;
+    document.getElementById('targetGapVal').textContent = gap > 0 ? `You need ${gap.toFixed(1)} more marks than your current average` : gap < 0 ? `You're already ${Math.abs(gap).toFixed(1)} marks ahead of this target on average!` : `Right on target!`;
+    document.getElementById('targetResult').classList.remove('hidden');
+}
+
+function createProgress(label, val, color) {
+    const perc = Math.min(100,(val/120)*100);
+    return `<div>
+        <div class="flex justify-between text-sm font-bold mb-2">
+            <span>${label}</span>
+            <span class="text-slate-400">${val} <small class="text-[10px]">/ 120 avg</small></span>
+        </div>
+        <div class="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+            <div class="h-full ${color} rounded-full transition-all duration-700" style="width:${perc}%"></div>
+        </div>
+    </div>`;
+}
+
+function renderInsights(container) {
+    if (scores.length < 2) {
+        container.innerHTML = `<div class="text-center py-20 bg-white dark:bg-darkCard rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800"><i class="fas fa-lightbulb text-5xl text-slate-200 mb-4"></i><p class="text-slate-500 font-medium">Add at least 2 tests to unlock insights.</p></div>`;
+        return;
+    }
+    const insights = generateInsights();
+    container.innerHTML = `
+        <h2 class="text-2xl font-black mb-6">Smart Insights</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+            ${insights.map(ins=>`
+            <div class="glass-card p-6 rounded-2xl border-l-4 ${ins.color}">
+                <div class="flex items-start gap-3">
+                    <div class="text-2xl mt-0.5">${ins.emoji}</div>
+                    <div>
+                        <h4 class="font-bold text-base mb-1">${ins.title}</h4>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">${ins.body}</p>
+                    </div>
+                </div>
+            </div>`).join('')}
+        </div>
+        <div class="glass-card p-6 rounded-3xl">
+            <h3 class="font-bold text-lg mb-4">Score Distribution</h3>
+            <div class="chart-container" style="height:250px"><canvas id="distChart"></canvas></div>
+        </div>
+    `;
+    setTimeout(initDistChart, 50);
+}
+
+function generateInsights() {
+    const insights = [];
+    const stats = calculateStats();
+    const avgP = scores.reduce((a,b)=>a+b.subj.p,0)/scores.length;
+    const avgC = scores.reduce((a,b)=>a+b.subj.c,0)/scores.length;
+    const avgM = scores.reduce((a,b)=>a+b.subj.m,0)/scores.length;
+    const avgP1 = scores.reduce((a,b)=>a+b.p1Total,0)/scores.length;
+    const avgP2 = scores.reduce((a,b)=>a+b.p2Total,0)/scores.length;
+    const sdOf = arr => Math.sqrt(arr.reduce((a,b)=>a+(b-(arr.reduce((x,y)=>x+y,0)/arr.length))**2,0)/arr.length);
+    const sdScore = sdOf(scores.map(s=>s.grandTotal));
+
+    // Strongest subject
+    const strongest = avgP>=avgC&&avgP>=avgM ? 'Physics' : avgC>=avgM ? 'Chemistry' : 'Maths';
+    const weakest = avgP<=avgC&&avgP<=avgM ? 'Physics' : avgC<=avgM ? 'Chemistry' : 'Maths';
+    insights.push({emoji:'💪',title:`${strongest} is your strongest subject`,body:`Your average in ${strongest} is the highest across all tests. Keep it consistent while shoring up other subjects.`,color:'border-emerald-500'});
+    insights.push({emoji:'⚠️',title:`${weakest} needs attention`,body:`Your ${weakest} average is the lowest. Even a 10-mark improvement there could shift your rank significantly.`,color:'border-red-400'});
+
+    // Paper 1 vs Paper 2
+    if (Math.abs(avgP1-avgP2) > 10) {
+        const better = avgP1>avgP2?'Paper 1':'Paper 2';
+        const worse = avgP1>avgP2?'Paper 2':'Paper 1';
+        insights.push({emoji:'📄',title:`You perform better in ${better}`,body:`On average, your ${better} score is ${Math.abs(avgP1-avgP2).toFixed(1)} marks higher. Practice ${worse}-style questions more.`,color:'border-indigo-400'});
+    }
+
+    // Consistency
+    if (sdScore > 25) {
+        insights.push({emoji:'📊',title:'High score volatility',body:`Your standard deviation is ${sdScore.toFixed(1)}, meaning your scores vary widely. Focus on floor improvement — avoid big mistakes.`,color:'border-amber-400'});
+    } else {
+        insights.push({emoji:'🎯',title:'Consistent performance',body:`Your standard deviation is ${sdScore.toFixed(1)} — you're performing reliably. The next step is raising your floor.`,color:'border-blue-400'});
+    }
+
+    // Rank corridor
+    const rankAt75 = predictRank(stats.avg * 0.75);
+    insights.push({emoji:'🏆',title:'Rank corridor',body:`Your average score of ${stats.avg} places you around rank ${predictRank(stats.avg)}. Your best performance (${stats.best}) could put you at rank ${predictRank(stats.best)}.`,color:'border-violet-400'});
+
+    // Recent vs overall
+    if (scores.length >= 4) {
+        const recentAvg = scores.slice(-3).reduce((a,b)=>a+b.grandTotal,0)/3;
+        const overallAvg = stats.avg;
+        if (recentAvg > overallAvg + 5) insights.push({emoji:'📈',title:'Recent momentum!',body:`Your last 3 tests average ${recentAvg.toFixed(1)}, which is ${(recentAvg-overallAvg).toFixed(1)} above your overall average. You're on an upswing!`,color:'border-emerald-500'});
+        else if (recentAvg < overallAvg - 5) insights.push({emoji:'📉',title:'Recent dip detected',body:`Your last 3 tests average ${recentAvg.toFixed(1)}, which is ${(overallAvg-recentAvg).toFixed(1)} below your overall average. Review what changed.`,color:'border-red-400'});
+    }
+    return insights;
+}
+
+function renderHistory(container) {
+    const seriesList = [...new Set(scores.map(s=>s.series).filter(Boolean))];
+    container.innerHTML = `
+        <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
+            <h2 class="text-2xl font-black">Test Vault <span class="text-sm font-normal text-slate-400">(${scores.length} tests)</span></h2>
+            <div class="flex gap-2 flex-wrap">
+                ${seriesList.length ? `<select id="seriesFilter" onchange="renderHistory(document.getElementById('app-content'))" class="px-3 py-2 text-sm rounded-xl border dark:bg-slate-900 dark:border-slate-700 outline-none">
+                    <option value="">All Series</option>
+                    ${seriesList.map(s=>`<option value="${s}">${s}</option>`).join('')}
+                </select>` : ''}
+                <button onclick="document.getElementById('importInput').click()" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-sm px-4 flex items-center gap-2"><i class="fas fa-file-import"></i> Import CSV</button>
+                <button onclick="exportCSV()" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-sm px-4 flex items-center gap-2"><i class="fas fa-file-export"></i> Export CSV</button>
+            </div>
+        </div>
+        <div class="space-y-3" id="historyList">
+            ${renderHistoryItems()}
+        </div>
+    `;
+}
+
+function renderHistoryItems() {
+    const filterEl = document.getElementById('seriesFilter');
+    const filterVal = filterEl ? filterEl.value : '';
+    const filtered = filterVal ? scores.filter(s=>s.series===filterVal) : scores;
+    if (!filtered.length) return `<div class="text-center py-20 glass-card rounded-3xl border-2 border-dashed"><p class="text-slate-400">No tests found.</p></div>`;
+    return filtered.slice().reverse().map((s,i,arr) => {
+        const prev = arr[i+1];
+        const delta = prev ? s.grandTotal - prev.grandTotal : null;
+        return `<div onclick="showTestDetails(${s.id})" class="glass-card p-5 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-indigo-500 transition group cursor-pointer">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div>
+                    <h4 class="font-black">${s.name}${s.series?` <span class="tag bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400">${s.series}</span>`:''}</h4>
+                    <p class="text-xs text-slate-400 font-semibold">${s.date} • Max: ${s.maxMarks}</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold">P1: ${s.p1Total}</div>
+                <div class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold">P2: ${s.p2Total}</div>
+                <div class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-black">Score: ${s.grandTotal}</div>
+                ${delta!==null?`<div class="px-2 py-1 rounded-lg text-[10px] font-black ${delta>0?'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400':delta<0?'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400':'bg-slate-100 text-slate-500'}">${delta>0?'+':''}${delta}</div>`:''}
+                <button onclick="event.stopPropagation(); openEditModal(${s.id})" class="p-2 text-slate-400 hover:text-indigo-500 transition md:opacity-0 group-hover:opacity-100"><i class="fas fa-pen"></i></button>
+                <button onclick="event.stopPropagation(); deleteScore(${s.id})" class="p-2 text-slate-400 hover:text-red-500 transition md:opacity-0 group-hover:opacity-100"><i class="fas fa-trash-can"></i></button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function showTestDetails(id) {
+    const test = scores.find(s=>s.id===id);
+    if (!test) return;
+    const modal = document.getElementById('detailsModal');
+    const perc = ((test.grandTotal/test.maxMarks)*100).toFixed(1);
+    document.getElementById('details-content').innerHTML = `
+        <div class="p-8 space-y-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h2 class="text-2xl font-black text-indigo-600 dark:text-indigo-400">${test.name}</h2>
+                    <p class="text-slate-400 font-bold uppercase text-[10px] tracking-widest">${test.date}${test.series?` • ${test.series}`:''}</p>
+                </div>
+                <button onclick="closeDetails()" class="text-slate-300 hover:text-slate-500"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl text-center">
+                    <p class="text-[10px] font-black text-slate-400 uppercase">Grand Total</p>
+                    <p class="text-2xl font-black">${test.grandTotal}<small class="text-xs text-slate-400"> / ${test.maxMarks}</small></p>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl text-center">
+                    <p class="text-[10px] font-black text-slate-400 uppercase">Percentage</p>
+                    <p class="text-2xl font-black text-emerald-500">${perc}%</p>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl text-center">
+                    <p class="text-[10px] font-black text-slate-400 uppercase">Est. Rank</p>
+                    <p class="text-2xl font-black text-amber-500">${predictRank(test.grandTotal)}</p>
+                </div>
+            </div>
+            <div>
+                <h4 class="font-bold mb-3">Subject Breakdown</h4>
+                <div class="space-y-2.5">
+                    ${[['Physics','bg-blue-500','text-blue-500',test.subj.p],['Chemistry','bg-emerald-500','text-emerald-500',test.subj.c],['Mathematics','bg-amber-500','text-amber-500',test.subj.m]].map(([n,bg,tc,v])=>`
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1"><span class="${tc}">${n}</span><span>${v} / ${Math.round(test.maxMarks/3)}</span></div>
+                        <div class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div class="h-full ${bg}" style="width:${(v/(test.maxMarks/3)*100)}%"></div></div>
+                    </div>`).join('')}
+                </div>
+            </div>
+            <div class="border-t dark:border-slate-800 pt-4 grid grid-cols-2 gap-6">
+                <div><h4 class="text-xs font-black uppercase text-slate-400 mb-1">Paper 1</h4><p class="text-2xl font-black">${test.p1Total}</p></div>
+                <div><h4 class="text-xs font-black uppercase text-slate-400 mb-1">Paper 2</h4><p class="text-2xl font-black">${test.p2Total}</p></div>
+            </div>
+            ${test.notes ? `<div class="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-900/30"><p class="text-xs font-black text-amber-500 uppercase mb-1">Notes</p><p class="text-sm text-slate-600 dark:text-slate-300">${test.notes}</p></div>` : ''}
+            <div class="flex gap-3">
+                <button onclick="closeDetails(); openEditModal(${test.id})" class="flex-1 py-3 border border-indigo-200 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">Edit</button>
+                <button onclick="closeDetails()" class="flex-[2] py-3 bg-indigo-600 text-white rounded-xl font-bold">Close</button>
+            </div>
+        </div>
+    `;
+    modal.classList.remove('hidden');
+    setTimeout(()=>document.getElementById('detailsContainer').classList.remove('scale-95'),10);
+}
+
+function closeDetails() {
+    document.getElementById('detailsContainer').classList.add('scale-95');
+    setTimeout(()=>document.getElementById('detailsModal').classList.add('hidden'),200);
+}
+
+function openModal() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'Add Mock Result';
+    document.getElementById('saveBtn').textContent = 'Save Test Result';
+    document.getElementById('scoreForm').reset();
+    document.getElementById('testDate').valueAsDate = new Date();
+    document.getElementById('scoreModal').classList.remove('hidden');
+    setTimeout(()=>document.getElementById('modalContainer').classList.remove('scale-95'),10);
+}
+
+function openEditModal(id) {
+    const test = scores.find(s=>s.id===id);
+    if (!test) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'Edit Test Result';
+    document.getElementById('saveBtn').textContent = 'Update Test Result';
+    document.getElementById('testName').value = test.name;
+    document.getElementById('testDate').value = test.date;
+    document.getElementById('maxMarks').value = test.maxMarks;
+    document.getElementById('testSeries').value = test.series || '';
+    document.getElementById('testNotes').value = test.notes || '';
+    // We only stored combined subject totals, so distribute evenly between papers
+    document.getElementById('p1p').value = test.p1p || 0;
+    document.getElementById('p1c').value = test.p1c || 0;
+    document.getElementById('p1m').value = test.p1m || 0;
+    document.getElementById('p2p').value = test.p2p || 0;
+    document.getElementById('p2c').value = test.p2c || 0;
+    document.getElementById('p2m').value = test.p2m || 0;
+    document.getElementById('scoreModal').classList.remove('hidden');
+    setTimeout(()=>document.getElementById('modalContainer').classList.remove('scale-95'),10);
+}
+
+function closeModal() {
+    document.getElementById('modalContainer').classList.add('scale-95');
+    setTimeout(()=>document.getElementById('scoreModal').classList.add('hidden'),200);
+    editingId = null;
+}
+
+document.getElementById('scoreForm').onsubmit = (e) => {
+    e.preventDefault();
+    const p1 = { p: +document.getElementById('p1p').value||0, c: +document.getElementById('p1c').value||0, m: +document.getElementById('p1m').value||0 };
+    const p2 = { p: +document.getElementById('p2p').value||0, c: +document.getElementById('p2c').value||0, m: +document.getElementById('p2m').value||0 };
+    const p1Total = p1.p+p1.c+p1.m, p2Total = p2.p+p2.c+p2.m;
+    const entry = {
+        id: editingId || Date.now(),
+        name: document.getElementById('testName').value,
+        date: document.getElementById('testDate').value,
+        maxMarks: +document.getElementById('maxMarks').value,
+        series: document.getElementById('testSeries').value.trim(),
+        notes: document.getElementById('testNotes').value.trim(),
+        p1Total, p2Total, grandTotal: p1Total+p2Total,
+        subj: {p:p1.p+p2.p, c:p1.c+p2.c, m:p1.m+p2.m},
+        p1p:p1.p, p1c:p1.c, p1m:p1.m, p2p:p2.p, p2c:p2.c, p2m:p2.m
+    };
+    if (editingId) {
+        scores = scores.map(s=>s.id===editingId ? entry : s);
+    } else {
+        scores.push(entry);
+    }
+    scores.sort((a,b)=>new Date(a.date)-new Date(b.date));
+    saveScores(); closeModal(); renderTab();
+};
+
+function deleteScore(id) {
+    if (!confirm('Delete this test?')) return;
+    scores = scores.filter(s=>s.id!==id);
+    saveScores(); renderTab();
+}
+
+function predictRank(marks) {
+    if (isNaN(marks)||marks===0) return 'N/A';
+    const sorted = [...rankMap].sort((a,b)=>b.marks-a.marks);
+    if (!sorted.length) return 'N/A';
+    if (marks >= sorted[0].marks) return `~${sorted[0].rank}`;
+    if (marks <= sorted[sorted.length-1].marks) return `>${sorted[sorted.length-1].rank}`;
+    for (let i=0; i<sorted.length-1; i++) {
+        const mU=sorted[i].marks, rU=sorted[i].rank, mL=sorted[i+1].marks, rL=sorted[i+1].rank;
+        if (marks<=mU && marks>=mL) {
+            const slope=(rL-rU)/(mL-mU);
+            return Math.round(rU+(marks-mU)*slope);
+        }
+    }
+    return 'N/A';
+}
+
+function renderSettings(container) {
+    container.innerHTML = `
+        <div class="max-w-2xl mx-auto space-y-8">
+            <div class="glass-card p-8 rounded-[2rem]">
+                <h3 class="font-bold text-xl mb-2">Rank-Marks Calibration</h3>
+                <p class="text-sm text-slate-500 mb-6">Based on JEE Advanced 2024 actual cutoffs. Adjust as needed.</p>
+                <div id="rankmap-list" class="space-y-3">
+                    <div class="flex gap-3 px-3 text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                        <div class="flex-1">Marks</div><div class="flex-1">Expected Rank</div><div class="w-10"></div>
+                    </div>
+                    ${rankMap.map((rm,idx)=>`
+                    <div class="flex gap-3 items-center">
+                        <input type="number" value="${rm.marks}" onchange="updateRankMap(${idx},'marks',this.value)" class="flex-1 p-3 rounded-xl border dark:bg-slate-900 dark:border-slate-800 outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="number" value="${rm.rank}" onchange="updateRankMap(${idx},'rank',this.value)" class="flex-1 p-3 rounded-xl border dark:bg-slate-900 dark:border-slate-800 outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button onclick="deleteRankMapRow(${idx})" class="w-10 text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition"><i class="fas fa-minus-circle"></i></button>
+                    </div>`).join('')}
+                </div>
+                <button onclick="addRankMapRow()" class="w-full mt-4 py-3 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-indigo-500 hover:border-indigo-500 transition flex items-center justify-center gap-2 font-bold">
+                    <i class="fas fa-plus-circle"></i> Add Point
+                </button>
+            </div>
+            <div class="glass-card p-6 rounded-2xl">
+                <h3 class="font-bold text-lg mb-2">Data Management</h3>
+                <p class="text-sm text-slate-500 mb-4">Import a previously exported CSV or export all data.</p>
+                <div class="flex gap-3 flex-wrap">
+                    <button onclick="document.getElementById('importInput').click()" class="flex-1 py-3 border border-indigo-200 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-file-import"></i> Import CSV
+                    </button>
+                    <button onclick="exportCSV()" class="flex-1 py-3 border border-slate-200 dark:border-slate-700 rounded-xl font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-file-export"></i> Export CSV
+                    </button>
+                </div>
+                <p class="text-xs text-slate-400 mt-3">CSV format: Date,Name,P1,P2,Total,MaxMarks. Series and notes columns are optional.</p>
+            </div>
+            <div class="bg-red-50 dark:bg-red-900/10 p-6 rounded-2xl border border-red-100 dark:border-red-900/30 flex justify-between items-center">
+                <div>
+                    <h4 class="font-bold text-red-600">Reset Everything</h4>
+                    <p class="text-xs text-red-400">Wipe all tests and settings permanently.</p>
+                </div>
+                <button onclick="clearData()" class="px-6 py-2 bg-red-600 text-white rounded-xl font-bold text-sm">Reset</button>
+            </div>
+        </div>
+    `;
+}
+
+function updateRankMap(idx,key,val) { rankMap[idx][key]=parseInt(val); localStorage.setItem('jee_adv_v3_rankmap',JSON.stringify(rankMap)); }
+function addRankMapRow() { rankMap.push({marks:0,rank:0}); renderSettings(document.getElementById('app-content')); }
+function deleteRankMapRow(idx) { rankMap=rankMap.filter((_,i)=>i!==idx); localStorage.setItem('jee_adv_v3_rankmap',JSON.stringify(rankMap)); renderSettings(document.getElementById('app-content')); }
+function clearData() {
+    if (!confirm('Permanently delete all your scores?')) return;
+    localStorage.removeItem('jee_adv_v3_scores');
+    localStorage.removeItem('jee_adv_v3_rankmap');
+    location.reload();
+}
+
+function exportCSV() {
+    if (!scores.length) return;
+    const h = "Date,Name,P1,P2,Total,MaxMarks,Series,Notes\n";
+    const b = scores.map(s=>`${s.date},"${s.name}",${s.p1Total},${s.p2Total},${s.grandTotal},${s.maxMarks},"${s.series||''}","${(s.notes||'').replace(/"/g,'""')}"`).join('\n');
+    const blob = new Blob([h+b],{type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='jee_mock_results.csv'; a.click();
+}
+
+function handleCSVImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const lines = e.target.result.trim().split('\n');
+        const header = lines[0].toLowerCase();
+        // Detect if first line is header
+        const startIdx = header.includes('date') ? 1 : 0;
+        let imported = 0, skipped = 0;
+        for (let i=startIdx; i<lines.length; i++) {
+            const cols = parseCSVLine(lines[i]);
+            if (cols.length < 6) { skipped++; continue; }
+            const [date, name, p1, p2, total, maxMarks, series='', notes=''] = cols;
+            if (!date || !name || isNaN(+p1) || isNaN(+total)) { skipped++; continue; }
+            // Check for duplicate by date+name
+            if (scores.some(s=>s.date===date.trim()&&s.name===name.trim())) { skipped++; continue; }
+            const p1n=+p1, p2n=+p2, tot=+total, maxM=+maxMarks||360;
+            // Estimate per-subject from totals (equal split fallback)
+            scores.push({
+                id: Date.now()+i,
+                name: name.trim(), date: date.trim(),
+                maxMarks: maxM, p1Total: p1n, p2Total: p2n, grandTotal: tot,
+                series: series.trim(), notes: notes.trim(),
+                subj: {p:Math.round(tot/3), c:Math.round(tot/3), m:tot-2*Math.round(tot/3)},
+                p1p:0,p1c:0,p1m:0,p2p:0,p2c:0,p2m:0
+            });
+            imported++;
+        }
+        scores.sort((a,b)=>new Date(a.date)-new Date(b.date));
+        saveScores();
+        alert(`Import complete!\n✅ Imported: ${imported}\n⚠️ Skipped (duplicate/invalid): ${skipped}\n\nNote: Per-subject scores will be estimated until you edit individual tests.`);
+        renderTab();
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+function parseCSVLine(line) {
+    const result = []; let cur = '', inQ = false;
+    for (let i=0; i<line.length; i++) {
+        if (line[i]==='"') { inQ=!inQ; continue; }
+        if (line[i]===',' && !inQ) { result.push(cur); cur=''; continue; }
+        cur += line[i];
+    }
+    result.push(cur);
+    return result;
+}
+
+function initMainChart() {
+    const canvas = document.getElementById('mainChart');
+    if (!canvas) return;
+    const isDark = document.documentElement.classList.contains('dark');
+    const grid = isDark ? '#334155' : '#f1f5f9';
+    const tick = isDark ? '#94a3b8' : '#64748b';
+    // Moving average
+    const movAvg = scores.map((_,i,arr) => {
+        const w = arr.slice(Math.max(0,i-2),i+1);
+        return parseFloat((w.reduce((a,b)=>a+b.grandTotal,0)/w.length).toFixed(1));
+    });
+    chartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: scores.map(s=>s.date.split('-').slice(1).join('/')),
+            datasets: [
+                { label:'Score', data:scores.map(s=>s.grandTotal), borderColor:'#6366f1', backgroundColor:isDark?'rgba(99,102,241,0.08)':'rgba(99,102,241,0.05)', fill:true, tension:0.3, borderWidth:3, pointRadius:5, pointBackgroundColor:'#6366f1' },
+                { label:'3-Test Avg', data:movAvg, borderColor:'#f59e0b', borderDash:[6,3], borderWidth:2, pointRadius:0, tension:0.4, fill:false }
+            ]
+        },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom',labels:{color:tick,font:{size:11}}}}, scales:{y:{beginAtZero:true,grid:{color:grid},ticks:{color:tick}},x:{grid:{display:false},ticks:{color:tick}}} }
+    });
+}
+
+function initSubjectCharts(p,c,m) {
+    const isDark = document.documentElement.classList.contains('dark');
+    const lc = isDark?'#94a3b8':'#64748b';
+    const grid = isDark?'#334155':'#f1f5f9';
+    new Chart(document.getElementById('subjectPie'),{
+        type:'doughnut',
+        data:{labels:['Physics','Chemistry','Maths'],datasets:[{data:[p,c,m],backgroundColor:['#3b82f6','#10b981','#f59e0b'],borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:lc}}},cutout:'70%'}
+    });
+    new Chart(document.getElementById('subjectStack'),{
+        type:'bar',
+        data:{
+            labels:scores.map(s=>s.name.length>10?s.name.slice(0,8)+'..':s.name),
+            datasets:[
+                {label:'Physics',data:scores.map(s=>s.subj.p),backgroundColor:'#3b82f6'},
+                {label:'Chemistry',data:scores.map(s=>s.subj.c),backgroundColor:'#10b981'},
+                {label:'Maths',data:scores.map(s=>s.subj.m),backgroundColor:'#f59e0b'}
+            ]
+        },
+        options:{responsive:true,maintainAspectRatio:false,scales:{x:{stacked:true,grid:{display:false},ticks:{color:lc}},y:{stacked:true,grid:{color:grid},ticks:{color:lc}}},plugins:{legend:{position:'bottom',labels:{color:lc}}}}
+    });
+    // Paper 1 vs 2
+    const paperEl = document.getElementById('paperChart');
+    if (paperEl) {
+        new Chart(paperEl,{
+            type:'bar',
+            data:{
+                labels:scores.map(s=>s.name.length>10?s.name.slice(0,8)+'..':s.name),
+                datasets:[
+                    {label:'Paper 1',data:scores.map(s=>s.p1Total),backgroundColor:'#6366f1'},
+                    {label:'Paper 2',data:scores.map(s=>s.p2Total),backgroundColor:'#a78bfa'}
+                ]
+            },
+            options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:{display:false},ticks:{color:lc}},y:{grid:{color:grid},ticks:{color:lc}}},plugins:{legend:{position:'bottom',labels:{color:lc}}}}
+        });
+    }
+}
+
+function initDistChart() {
+    const el = document.getElementById('distChart');
+    if (!el || scores.length < 2) return;
+    const isDark = document.documentElement.classList.contains('dark');
+    const lc = isDark?'#94a3b8':'#64748b';
+    const grid = isDark?'#334155':'#f1f5f9';
+    const min = Math.min(...scores.map(s=>s.grandTotal));
+    const max = Math.max(...scores.map(s=>s.grandTotal));
+    const step = Math.max(10, Math.round((max-min)/8));
+    const buckets = [];
+    for (let i=Math.floor(min/step)*step; i<=max; i+=step) buckets.push(i);
+    const counts = buckets.map(b=>scores.filter(s=>s.grandTotal>=b&&s.grandTotal<b+step).length);
+    new Chart(el,{
+        type:'bar',
+        data:{labels:buckets.map(b=>`${b}-${b+step}`),datasets:[{label:'Tests',data:counts,backgroundColor:'#6366f1',borderRadius:8}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:lc}},y:{grid:{color:grid},ticks:{color:lc,precision:0}}}}
+    });
+}
+</script>
 </body>
 </html>
